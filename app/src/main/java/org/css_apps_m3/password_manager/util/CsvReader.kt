@@ -23,7 +23,8 @@ object CsvReader {
                                 name = it[0],
                                 url = it[1],
                                 username = it[2],
-                                password = it[3]
+                                password = it[3],
+                                note = it[4]
                             )
                         )
                     }

@@ -5,9 +5,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,13 +20,14 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PasswordDetailScreen(entry: PasswordEntry, onBack: () -> Unit) {
+fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: () -> Unit) {
     val context = LocalContext.current
+
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Details") },
+                title = { Text(domain) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -36,30 +38,31 @@ fun PasswordDetailScreen(entry: PasswordEntry, onBack: () -> Unit) {
     ) { padding ->
         Column(
             modifier = Modifier
+                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // URL als Header
-            Text(
-                text = entry.url,
-                style = MaterialTheme.typography.headlineSmall
-            )
-
-            // Username Card
-            DetailCard(
-                label = "Username",
-                value = entry.username,
-                context = context
-            )
-
-            // Passwort Card
-            DetailCard(
-                label = "Password",
-                value = entry.password,
-                context = context
-            )
+            accounts.forEach { entry ->
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        DetailCard(label = "Username", value = entry.username, context = context)
+                        DetailCard(label = "Password", value = entry.password, context = context)
+                        if (!entry.note.isNullOrBlank()) {
+                            DetailCard(label = "Note", value = entry.note!!, context = context)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -68,11 +71,11 @@ fun PasswordDetailScreen(entry: PasswordEntry, onBack: () -> Unit) {
 fun DetailCard(label: String, value: String, context: Context) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.small
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

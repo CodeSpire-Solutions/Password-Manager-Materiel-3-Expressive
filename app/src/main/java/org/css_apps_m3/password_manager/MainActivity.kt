@@ -74,24 +74,28 @@ class MainActivity : FragmentActivity() {
                 } else {
                     NavHost(navController, startDestination = "list") {
                         composable("list") {
-                            PasswordListScreen(passwords) { entry ->
+                            PasswordListScreen(passwords) { domain, accounts ->
                                 navController.currentBackStackEntry
                                     ?.savedStateHandle
-                                    ?.set("entry", entry)
-                                navController.navigate("detail")
+                                    ?.set("accounts", accounts)
+                                navController.navigate("detail/$domain")
                             }
+
                         }
-                        composable("detail") {
-                            val entry =
-                                navController.previousBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.get<PasswordEntry>("entry")
-                            entry?.let {
-                                PasswordDetailScreen(it) {
-                                    navController.popBackStack()
-                                }
-                            }
+                        composable("detail/{domain}") { backStackEntry ->
+                            val domain = backStackEntry.arguments?.getString("domain") ?: ""
+                            val accounts = navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.get<List<PasswordEntry>>("accounts")
+                                ?: emptyList()
+
+                            PasswordDetailScreen(
+                                domain = domain,
+                                accounts = accounts,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
+
                     }
                 }
             }

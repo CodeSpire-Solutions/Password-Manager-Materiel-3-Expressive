@@ -1,0 +1,4 @@
+-Added new Search for Passwords/Domain Feature
+-Added new Account grouping (Only one Top-Level-Domain shows now, Account are grouped by the Top-Level-Domain)
+-Few Bugfixes
+-Security Improvements
