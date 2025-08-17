@@ -1,0 +1,1 @@
+A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported. You can copy usernames and passwords. You can access the app via biometric authentication or by entering your master password.
