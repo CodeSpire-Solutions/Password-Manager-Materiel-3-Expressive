@@ -10,9 +10,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/oneuiicon"
+        android:icon="@drawable/icon_filled"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/oneuiicon"
+        android:roundIcon="@drawable/icon_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PasswortManager">
         <activity

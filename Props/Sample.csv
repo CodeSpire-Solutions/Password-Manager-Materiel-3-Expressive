@@ -1,0 +1,8 @@
+name,url,username,password,note
+Google Main,https://www.google.com,mein.google.account@gmail.com,Passwort123,Privater Google-Account
+Google Work,https://mail.google.com,arbeit.google@gmail.com,Arbeit123,Firmenmail
+Github,https://www.github.com,devuser,SuperSecurePwd,Entwickler Account
+Twitter,https://twitter.com,socialuser,TwitterSecret,Social Media privat
+Amazon,https://www.amazon.de,shopper,Amazon123,Einkaufskonto
+Netflix,https://www.netflix.com,filmfan,MoviePass!,Familienabo
+Dropbox,https://www.dropbox.com,clouduser,Cloud1234,Daten Backup
