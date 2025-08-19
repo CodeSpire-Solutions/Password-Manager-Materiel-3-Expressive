@@ -1,8 +1,8 @@
 ![App Icon](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png)
 
-# Passwords | Materiel 3 Password Manager
+# Passwords | Material 3 Password Manager
 ## Description
-A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
+A Material 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
 
 ## Features
 - Import CSV Passwords
