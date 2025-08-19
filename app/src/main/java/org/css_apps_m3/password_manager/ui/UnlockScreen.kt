@@ -43,9 +43,9 @@ fun UnlockScreen(
     //Log.d("VaultDebug", "UnlockScreen -> storedPassword: $storedPassword")
     //Log.d("VaultDebug", "UnlockScreen -> biometricsEnabled: $biometricsEnabled")
     //Log.d("VaultDebug", "UnlockScreen -> context: $context")
-    //Log.d("VaultDebug", "UnlockScreen -> ist FragmentActivity: ${context is FragmentActivity}")
+    //Log.d("VaultDebug", "UnlockScreen -> is FragmentActivity: ${context is FragmentActivity}")
 
-    // Wenn biometrische Auth aktiviert -> automatisch starten
+    // When biometric authentication is enabled -> start automatically
     if (biometricsEnabled) {
         LaunchedEffect(Unit) {
             if (context is FragmentActivity) {
@@ -53,7 +53,7 @@ fun UnlockScreen(
                     onUnlock()
                 }
             } else {
-                //Log.e("VaultDebug", "UnlockScreen -> Context ist keine FragmentActivity, Biometrie nicht möglich")
+                //Log.e("VaultDebug", "UnlockScreen -> Context is no FragmentActivity, Biometric Auth not possible")
             }
         }
     }
@@ -135,12 +135,12 @@ fun BiometricButton(context: Context, onUnlock: () -> Unit) {
             Text("Unlock with Biometric")
         }
     } else {
-        //Log.e("VaultDebug", "BiometricButton -> Kein FragmentActivity Context!")
+        //Log.e("VaultDebug", "BiometricButton -> No FragmentActivity Context!")
         Text("Biometric Authentication not available", color = MaterialTheme.colorScheme.error)
     }
 }
 
-// Hilfsfunktion für Auto-Start
+// Help function for auto start
 fun triggerBiometricAuth(context: FragmentActivity, onUnlock: () -> Unit) {
     val executor: Executor = ContextCompat.getMainExecutor(context)
 

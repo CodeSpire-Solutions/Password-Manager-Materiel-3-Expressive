@@ -7,5 +7,5 @@ data class PasswordEntry(
     val url: String,
     val username: String,
     val password: String,
-    val note: String? = null   // nullable + Defaultwert
+    val note: String? = null   // nullable + Defaultvalue
 ) : Serializable

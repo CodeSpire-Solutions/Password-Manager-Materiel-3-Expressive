@@ -17,10 +17,10 @@ import java.net.URI
 fun PasswordListScreen(passwords: List<PasswordEntry>, onClick: (String, List<PasswordEntry>) -> Unit) {
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
 
-    // Gruppiere Passwörter nach Domain
+    // Group passwords by domain
     val grouped = passwords
-        .map { it.copy(url = extractDomain(it.url)) } // nur Domain behalten
-        .filter { !it.url.startsWith("android://") } // Android-URIs rausfiltern
+        .map { it.copy(url = extractDomain(it.url)) } // only keep domain
+        .filter { !it.url.startsWith("android://") } // Filter out Android URIs
         .groupBy { it.url }
 
     // Filter
@@ -90,7 +90,7 @@ fun extractDomain(url: String): String {
         val host = URI(url).host ?: url
         if (host.startsWith("www.")) host.substring(4) else host
     } catch (e: Exception) {
-        // Falls URI ungültig ist, gib einfach zurück
+        // If URI is invalid, simply return
         url.substringAfterLast("@").substringAfter("://")
     }
 }

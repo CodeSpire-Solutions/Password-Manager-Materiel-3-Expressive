@@ -12,12 +12,12 @@ import java.io.File
 class PasswordRepository(private val context: Context) {
     private val gson = Gson()
 
-    // MasterKey im Android Keystore mit AES256
+    // MasterKey in the Android Keystore with AES256
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
 
-    // interne verschlüsselte Datei
+    // internal encrypted file
     private val file = File(context.filesDir, "passwords.json.enc")
 
     private val encryptedFile = EncryptedFile.Builder(
@@ -32,7 +32,7 @@ class PasswordRepository(private val context: Context) {
     fun saveLocal(list: List<PasswordEntry>) {
         val json = gson.toJson(list)
 
-        // Speichern verschlüsselt intern
+        // Stores encrypted internally
         encryptedFile.openFileOutput().use { output ->
             output.write(json.toByteArray(Charsets.UTF_8))
         }

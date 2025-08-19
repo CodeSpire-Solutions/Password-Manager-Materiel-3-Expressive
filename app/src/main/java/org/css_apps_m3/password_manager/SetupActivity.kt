@@ -132,7 +132,7 @@ class SetupActivity : ComponentActivity() {
             .putBoolean("biometrics_enabled", biometricsEnabled)
             .apply()
 
-        //Log.d("VaultDebug", "SetupActivity -> Passwort gespeichert: $password")
+        //Log.d("VaultDebug", "SetupActivity -> Password saved: $password")
         //Log.d("VaultDebug", "SetupActivity -> biometrics_enabled: $biometricsEnabled")
     }
 }
