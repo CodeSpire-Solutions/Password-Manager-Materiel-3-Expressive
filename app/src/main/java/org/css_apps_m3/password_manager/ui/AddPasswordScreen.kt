@@ -16,8 +16,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.css_apps_m3.password_manager.R
-import org.css_apps_m3.password_manager.R.drawable.visibility_24px
-import org.css_apps_m3.password_manager.R.drawable.visibility_off_24px
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
 
@@ -99,9 +97,14 @@ fun AddPasswordScreen(
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        val iconId = if (passwordVisible) {
+                            R.drawable.visibility
+                        } else {
+                            R.drawable.visibilityoff
+                        }
                         Icon(
                             painter = painterResource(
-                                id = if (passwordVisible) visibility_24px else visibility_off_24px
+                                iconId
                             ),
                             contentDescription = if (passwordVisible) "Passwort verstecken" else "Passwort anzeigen"
                         )
@@ -109,7 +112,6 @@ fun AddPasswordScreen(
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
-
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },

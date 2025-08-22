@@ -20,7 +20,6 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 import org.css_apps_m3.password_manager.ui.AddPasswordScreen
 import org.css_apps_m3.password_manager.ui.PasswordDetailScreen
 import org.css_apps_m3.password_manager.ui.PasswordListScreen
-import org.css_apps_m3.password_manager.ui.SettingsScreen
 import org.css_apps_m3.password_manager.ui.UnlockScreen
 import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
 import org.css_apps_m3.password_manager.util.CsvReader
@@ -30,7 +29,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val isSetupDone = prefs.getBoolean("setup_done", false)
 
         if (!isSetupDone) {
@@ -104,12 +103,6 @@ class MainActivity : FragmentActivity() {
                             AddPasswordScreen(
                                 navController = navController,
                                 repository = repo
-                            )
-                        }
-                        composable("settings") {
-                            SettingsScreen(
-                                navController = navController,
-                                repo = repo
                             )
                         }
                     }
