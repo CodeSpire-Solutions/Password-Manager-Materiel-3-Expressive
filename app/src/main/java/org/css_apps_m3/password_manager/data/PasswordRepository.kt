@@ -1,7 +1,6 @@
 package org.css_apps_m3.password_manager.data
 
 import android.content.Context
-import android.os.Environment
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import com.google.gson.Gson
@@ -20,19 +19,23 @@ class PasswordRepository(private val context: Context) {
     // internal encrypted file
     private val file = File(context.filesDir, "passwords.json.enc")
 
-    private val encryptedFile = EncryptedFile.Builder(
-        context,
-        file,
-        masterKey,
-        EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
-    ).build()
-
     fun hasLocalData(): Boolean = file.exists()
 
     fun saveLocal(list: List<PasswordEntry>) {
         val json = gson.toJson(list)
 
-        // Stores encrypted internally
+        // Ensure we always overwrite by deleting the old file
+        if (file.exists()) {
+            file.delete()
+        }
+
+        val encryptedFile = EncryptedFile.Builder(
+            context,
+            file,
+            masterKey,
+            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+        ).build()
+
         encryptedFile.openFileOutput().use { output ->
             output.write(json.toByteArray(Charsets.UTF_8))
         }
@@ -40,6 +43,14 @@ class PasswordRepository(private val context: Context) {
 
     fun loadPasswords(): List<PasswordEntry> {
         if (!file.exists()) return emptyList()
+
+        val encryptedFile = EncryptedFile.Builder(
+            context,
+            file,
+            masterKey,
+            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+        ).build()
+
         val json = encryptedFile.openFileInput().use { input ->
             input.readBytes().toString(Charsets.UTF_8)
         }

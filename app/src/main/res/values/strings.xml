@@ -6,4 +6,5 @@
     <string name="package_name">org.css_apps_m3.password_manager</string>
     <string name="title_activity_setup_screen">SetupScreen</string>
     <string name="title_activity_settings_screen">SettingsScreen</string>
+    <string name="title_activity_add_password_screen">AddPasswordScreen</string>
 </resources>

@@ -63,23 +63,23 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Activity KTX (für ActivityResultContracts)
-    implementation("androidx.activity:activity-ktx:1.7.2")
+    implementation("androidx.activity:activity-ktx:1.10.1")
     // Fragment KTX (falls du auch in Fragments ActivityResultContracts nutzen willst)
-    implementation("androidx.fragment:fragment-ktx:1.6.1")
+    implementation("androidx.fragment:fragment-ktx:1.8.9")
 
     // Compose Material3
-    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation(libs.material3)
 
 
     // Compose
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.9.3")
 
     // Biometric
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     // CSV Parser
-    implementation("com.opencsv:opencsv:5.9")
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.opencsv:opencsv:5.12.0")
+    implementation("com.google.code.gson:gson:2.13.1")
 
     // AndroidX Security für EncryptedSharedPreferences
-    implementation("androidx.security:security-crypto:1.1.0-alpha03")
+    implementation("androidx.security:security-crypto:1.1.0")
 }
