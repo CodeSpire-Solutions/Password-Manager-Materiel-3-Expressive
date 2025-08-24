@@ -1,19 +1,19 @@
 @file:Suppress("DEPRECATION")
 
 plugins {
-    alias(libs.plugins.android.application) version "8.12.0"
+    alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "org.css_apps_m3.password_manager"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "org.css_apps_m3.password_manager"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "0.3.0"
 
