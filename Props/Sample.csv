@@ -1,9 +1,8 @@
 name,url,username,password,note
-Google Main,https://www.google.com,my.google.account@gmail.com,Passwort123,Private Google Account
-Google Work,https://mail.google.com,work.google@gmail.com,Work123,Company Email
-Github,https://www.github.com,devuser,SuperSecurePwd,Developer Account
-Twitter,https://twitter.com,socialuser,TwitterSecret,Social Media private
-Amazon,https://www.amazon.de,shopper,Amazon123,Buy in account
-Netflix,https://www.netflix.com,moviefan,MoviePass!
-Dropbox,https://www.dropbox.com,clouduser,Cloud1234,File Backup
-Google Secondary,https://www.google.com,my.2google.account@gmail.com,Passwort234,Private Second Google Account
+Google Main,https://www.google.com,mein.google.account@gmail.com,Passwort123,Privater Google-Account
+Google Work,https://mail.google.com,arbeit.google@gmail.com,Arbeit123,Firmenmail
+Github,https://www.github.com,devuser,SuperSecurePwd,Entwickler Account
+Twitter,https://twitter.com,socialuser,TwitterSecret,Social Media privat
+Amazon,https://www.amazon.de,shopper,Amazon123,Einkaufskonto
+Netflix,https://www.netflix.com,filmfan,MoviePass!,Familienabo
+Dropbox,https://www.dropbox.com,clouduser,Cloud1234,Daten Backup
