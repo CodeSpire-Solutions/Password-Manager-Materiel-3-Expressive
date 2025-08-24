@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "org.css_apps_m3.password_manager"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.css_apps_m3.password_manager"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "0.3.0"
 
