@@ -1,7 +1,7 @@
 @file:Suppress("DEPRECATION")
 
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.application) version "8.12.0"
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
