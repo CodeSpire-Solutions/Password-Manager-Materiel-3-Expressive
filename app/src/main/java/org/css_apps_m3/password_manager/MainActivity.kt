@@ -3,29 +3,24 @@ package org.css_apps_m3.password_manager
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.hardware.biometrics.BiometricPrompt
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
-import androidx.activity.ComponentActivity
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.*
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
-import org.css_apps_m3.password_manager.ui.AddPasswordScreen
-import org.css_apps_m3.password_manager.ui.PasswordDetailScreen
-import org.css_apps_m3.password_manager.ui.PasswordListScreen
-import org.css_apps_m3.password_manager.ui.UnlockScreen
+import org.css_apps_m3.password_manager.ui.*
 import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
 import org.css_apps_m3.password_manager.util.CsvReader
 
 @SuppressLint("RestrictedApi")
 class MainActivity : FragmentActivity() {
+    private var unlocked by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -43,10 +38,9 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             PasswordViewerTheme {
-                var unlocked by remember { mutableStateOf(false) }
                 var passwords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
-
                 var pendingUnlock by remember { mutableStateOf(false) }
+
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.OpenDocument(),
                     onResult = { uri: Uri? ->
@@ -76,7 +70,6 @@ class MainActivity : FragmentActivity() {
                     NavHost(navController, startDestination = "list") {
                         composable("list") {
                             PasswordListScreen(
-                                passwords = passwords,
                                 navController = navController,
                                 onClick = { domain, accounts ->
                                     navController.currentBackStackEntry
@@ -105,10 +98,20 @@ class MainActivity : FragmentActivity() {
                                 repository = repo
                             )
                         }
+                        composable("settings") {
+                            SettingsScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
-
                 }
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // When the app goes into the background → Lock
+        unlocked = false
     }
 }

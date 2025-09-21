@@ -12,26 +12,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.navigation.NavController
 import org.css_apps_m3.password_manager.model.PasswordEntry
-import java.net.URI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordListScreen(
-    passwords: List<PasswordEntry>,
-    onClick: (String, List<PasswordEntry>) -> Unit,
-    navController: NavController
+    navController: NavController,
+    onClick: (String, List<PasswordEntry>) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val repo = remember { org.css_apps_m3.password_manager.data.PasswordRepository(context) }
+
+    var passwords by remember { mutableStateOf(emptyList<PasswordEntry>()) }
+
+    // Load passwords automatically when the screen is opened
+    LaunchedEffect(Unit) {
+        passwords = repo.loadPasswords()
+    }
+
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
 
-    // Group passwords by domain
     val grouped = passwords
-        .map { it.copy(url = extractDomain(it.url)) } // only keep domain
-        .filter { !it.url.startsWith("android://") } // Filter out Android URIs
+        .map { it.copy(url = extractDomain(it.url)) }
+        .filter { !it.url.startsWith("android://") }
         .groupBy { it.url }
 
-    // Filter
     val filtered = grouped.filter { (domain, entries) ->
         domain.contains(searchQuery.text, ignoreCase = true) ||
                 entries.any { it.username.contains(searchQuery.text, ignoreCase = true) }
@@ -42,21 +50,14 @@ fun PasswordListScreen(
             TopAppBar(
                 title = { Text("Passwords") },
                 actions = {
-                    /*IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings"
-                        )
+                    IconButton(onClick = { navController.navigate("settings") }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
-
-                     */
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("add") }
-            ) {
+            FloatingActionButton(onClick = { navController.navigate("add") }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Password")
             }
         }
@@ -74,12 +75,12 @@ fun PasswordListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(50), // Runde Search-Leiste
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp)
             )
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(filtered.toList()) { (domain, accounts) ->
                     Card(
                         modifier = Modifier
@@ -107,15 +108,11 @@ fun PasswordListScreen(
     }
 }
 
-/**
- * Extracts the top-level domain (like "google.com") from a given URL
- */
 fun extractDomain(url: String): String {
     return try {
-        val host = URI(url).host ?: url
+        val host = java.net.URI(url).host ?: url
         if (host.startsWith("www.")) host.substring(4) else host
     } catch (e: Exception) {
-        // If URI is invalid, simply return
         url.substringAfterLast("@").substringAfter("://")
     }
 }

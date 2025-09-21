@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,7 +44,6 @@ class SetupActivity : ComponentActivity() {
         setContent {
             PasswordViewerTheme {
                 var password by remember { mutableStateOf("") }
-                var csvImported by remember { mutableStateOf(false) }
                 var biometricsEnabled by remember { mutableStateOf(false) }
 
                 Column(
@@ -92,9 +90,35 @@ class SetupActivity : ComponentActivity() {
                         onClick = {
                             if (password.isBlank()) {
                                 Toast.makeText(this@SetupActivity, "Please enter Password", Toast.LENGTH_SHORT).show()
-                            } else if (repo.loadPasswords().isEmpty()) {
-                                Toast.makeText(this@SetupActivity, "Please import CSV", Toast.LENGTH_SHORT).show()
                             } else {
+                                // If nothing has been imported, simply save an empty list.
+                                if (repo.loadPasswords().isEmpty()) {
+                                    repo.saveLocal(emptyList())
+                                }
+
+                                saveMasterPassword(password, biometricsEnabled)
+                                getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                                    .edit()
+                                    .putBoolean("setup_done", true)
+                                    .apply()
+                                startActivity(Intent(this@SetupActivity, MainActivity::class.java))
+                                finish()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Complete Setup")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            if (password.isBlank()) {
+                                Toast.makeText(this@SetupActivity, "Please enter Password", Toast.LENGTH_SHORT).show()
+                            } else {
+                                // Completely empty repo and start setup
+                                repo.saveLocal(emptyList())
                                 saveMasterPassword(password, biometricsEnabled)
                                 getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                                     .edit()
@@ -105,9 +129,9 @@ class SetupActivity : ComponentActivity() {
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = repo.loadPasswords().isNotEmpty()
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) {
-                        Text("Complete Setups")
+                        Text("Start from Scratch")
                     }
                 }
             }
@@ -131,8 +155,5 @@ class SetupActivity : ComponentActivity() {
             .putString("master_password", password)
             .putBoolean("biometrics_enabled", biometricsEnabled)
             .apply()
-
-        //Log.d("VaultDebug", "SetupActivity -> Password saved: $password")
-        //Log.d("VaultDebug", "SetupActivity -> biometrics_enabled: $biometricsEnabled")
     }
 }

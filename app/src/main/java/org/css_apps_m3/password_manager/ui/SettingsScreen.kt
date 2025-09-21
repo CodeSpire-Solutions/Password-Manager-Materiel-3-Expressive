@@ -1,31 +1,66 @@
 package org.css_apps_m3.password_manager.ui
 
+import android.content.Context
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.data.PasswordRepository
+import org.css_apps_m3.password_manager.model.PasswordEntry
+import java.io.OutputStreamWriter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    navController: NavController,
-    repo: PasswordRepository
+    onBack: () -> Unit
 ) {
-    var darkMode by remember { mutableStateOf(false) }
-    var biometric by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val repo = remember { PasswordRepository(context) }
+
+    var newPassword by remember { mutableStateOf("") }
+    var biometricsEnabled by remember { mutableStateOf(false) }
+
+    // CSV Export Launcher
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+        onResult = { uri ->
+            if (uri != null) {
+                val passwords = repo.loadPasswords()
+                if (passwords.isEmpty()) {
+                    Toast.makeText(context, "No passwords to export", Toast.LENGTH_SHORT).show()
+                } else {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        OutputStreamWriter(out).use { writer ->
+                            // Header
+                            writer.appendLine("name,url,username,password,note")
+                            // Data
+                            passwords.forEach {
+                                writer.appendLine("${it.name},${it.url},${it.username},${it.password},${it.note}")
+                            }
+                        }
+                    }
+                    Toast.makeText(context, "Passwords exported", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Einstellungen") },
+                title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -33,43 +68,64 @@ fun SettingsScreen(
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Optik", style = MaterialTheme.typography.titleMedium)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Dunkles Design")
-                Switch(checked = darkMode, onCheckedChange = { darkMode = it })
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Text("Sicherheit", style = MaterialTheme.typography.titleMedium)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Biometrische Entsperrung")
-                Switch(checked = biometric, onCheckedChange = { biometric = it })
-            }
-
-            Spacer(Modifier.height(24.dp))
+            // Change Password
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text("New Master Password") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Button(
                 onClick = {
-                    // TODO: Exportfunktion implementieren
+                    if (newPassword.isBlank()) {
+                        Toast.makeText(context, "Password cannot be empty", Toast.LENGTH_SHORT).show()
+                    } else {
+                        saveMasterPassword(context, newPassword, biometricsEnabled)
+                        Toast.makeText(context, "Master password updated", Toast.LENGTH_SHORT).show()
+                        newPassword = ""
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Passwörter als CSV exportieren")
+                Text("Change Master Password")
+            }
+
+            Divider()
+
+            // Export Button
+            Button(
+                onClick = {
+                    exportLauncher.launch("passwords_export.csv")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Export Passwords as CSV")
             }
         }
     }
+}
+
+private fun saveMasterPassword(context: Context, password: String, biometricsEnabled: Boolean) {
+    val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    val encryptedPrefs = EncryptedSharedPreferences.create(
+        context,
+        "vault_prefs",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    encryptedPrefs.edit()
+        .putString("master_password", password)
+        .putBoolean("biometrics_enabled", biometricsEnabled)
+        .apply()
 }
