@@ -10,7 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -22,7 +22,6 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 @Composable
 fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: () -> Unit) {
     val context = LocalContext.current
-
 
     Scaffold(
         topBar = {
@@ -56,7 +55,7 @@ fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: 
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         DetailCard(label = "Username", value = entry.username, context = context)
-                        DetailCard(label = "Password", value = entry.password, context = context)
+                        PasswordCard(label = "Password", value = entry.password, context = context)
                         if (!entry.note.isNullOrBlank()) {
                             DetailCard(label = "Note", value = entry.note!!, context = context)
                         }
@@ -92,6 +91,51 @@ fun DetailCard(label: String, value: String, context: Context) {
         }
     }
 }
+
+@Composable
+fun PasswordCard(label: String, value: String, context: Context) {
+    var visible by remember { mutableStateOf(false) }
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    if (visible) value else "••••••••",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            Row {
+                IconButton(onClick = { visible = !visible }) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (visible) R.drawable.visibility else R.drawable.visibilityoff
+                        ),
+                        contentDescription = if (visible) "Hide Password" else "Show Password"
+                    )
+                }
+                IconButton(onClick = {
+                    copyToClipboard(context, label, value)
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.content_copy),
+                        contentDescription = "Copy"
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

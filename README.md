@@ -11,7 +11,7 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 
 ## Release Channels
 - Stable Releases: [-](#)
-- Beta Releases: [v0.4.0](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.4.0)
+- Beta Releases: [v0.4.1](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.4.1)
 - Nightly Releases: [-](#)
 
 ## Fixes and Security Issues

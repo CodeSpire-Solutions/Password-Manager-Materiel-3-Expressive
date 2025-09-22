@@ -34,10 +34,10 @@ fun AddPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Neues Passwort") },
+                title = { Text("New Password") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -56,15 +56,15 @@ fun AddPasswordScreen(
                                 currentList.add(newEntry)
                                 repository.saveLocal(currentList)
 
-                                Log.d("AddPasswordScreen", "Neues Passwort gespeichert: $newEntry")
+                                //Log.d("AddPasswordScreen", "New Password Saved: $newEntry")
 
                                 navController.popBackStack()
                             } else {
-                                Log.w("AddPasswordScreen", "Eingaben unvollständig")
+                                //Log.w("AddPasswordScreen", "Input incomplete")
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Speichern")
+                        Icon(Icons.Default.Check, contentDescription = "Save")
                     }
                 }
             )
@@ -115,7 +115,7 @@ fun AddPasswordScreen(
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
-                label = { Text("Notiz") },
+                label = { Text("Note") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 maxLines = 4

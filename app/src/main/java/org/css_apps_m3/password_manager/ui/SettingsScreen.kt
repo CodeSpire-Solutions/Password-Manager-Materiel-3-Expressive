@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.data.PasswordRepository
-import org.css_apps_m3.password_manager.model.PasswordEntry
 import java.io.OutputStreamWriter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +27,10 @@ fun SettingsScreen(
 
     var newPassword by remember { mutableStateOf("") }
     var biometricsEnabled by remember { mutableStateOf(false) }
+
+    // SharedPreferences für Theme
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
 
     // CSV Export Launcher
     val exportLauncher = rememberLauncherForActivityResult(
@@ -72,7 +75,30 @@ fun SettingsScreen(
                 .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        ) { /*
+            // Theme Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Dark Mode")
+                Switch(
+                    checked = darkMode,
+                    onCheckedChange = {
+                        darkMode = it
+                        prefs.edit().putBoolean("dark_mode", darkMode).apply()
+                        Toast.makeText(
+                            context,
+                            if (darkMode) "Dark Mode Enabled" else "Light Mode Enabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            }
+
+            Divider()
+            */
+
             // Change Password
             OutlinedTextField(
                 value = newPassword,
