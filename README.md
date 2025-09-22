@@ -9,6 +9,9 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 - Copy Usernames & Passwords
 - Biometric Authentication & Master Password Unlock
 
+## Planned Updates
+- Sync all of your Passwords on your personal DB. (SQLite)
+
 ## Release Channels
 - Stable Releases: [-](#)
 - Beta Releases: [v0.4.1](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.4.1)
