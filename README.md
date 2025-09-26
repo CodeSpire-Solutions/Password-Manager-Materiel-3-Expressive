@@ -4,13 +4,19 @@
 ## Description
 A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
 
+<a href="https://f-droid.org/packages/org.css_apps_m3.password_manager">
+    <img src="https://f-droid.org/badge/get-it-on.png"
+    alt="Get it on F-Droid"
+    height="80">
+</a>
+
+## Planned Updates
+- Sync all of your Passwords on your personal DB. (SQLite)
+
 ## Features
 - Import CSV Passwords
 - Copy Usernames & Passwords
 - Biometric Authentication & Master Password Unlock
-
-## Planned Updates
-- Sync all of your Passwords on your personal DB. (SQLite)
 
 ## Release Channels
 - Stable Releases: [-](#)
@@ -20,5 +26,5 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 ## Fixes and Security Issues
 If you have any suggestions or security issues, please open an Issue or a Pull Request.
 
-## Note
-Until now i wouldnt recommend switching from any other Password Manager to this. Its not 100% safe. Disclaimer: We are not responsible if passwords are hacked. Use at your own risk.
+## Disclaimer
+We are not responsible if passwords are hacked. Use at your own risk.

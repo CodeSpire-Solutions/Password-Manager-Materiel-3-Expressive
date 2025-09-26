@@ -1,0 +1,3 @@
+New Features:
+-Bug fixes
+-Added Add Password Option

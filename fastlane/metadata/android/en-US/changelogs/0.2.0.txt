@@ -1,0 +1,6 @@
+New Features:
+-Search for Passwords
+-Better Account Management
+
+General Updates:
+-Bug Fixes

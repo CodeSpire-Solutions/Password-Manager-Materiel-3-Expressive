@@ -1,0 +1,4 @@
+New Features:
+-Bug fixes
+-Added Start from Scratch Option
+-Added Export Passwords to CSV Option

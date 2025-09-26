@@ -1,0 +1,3 @@
+New Features:
+-Bug fixes
+-Enhanced Password Security (Encrypted JSON)
