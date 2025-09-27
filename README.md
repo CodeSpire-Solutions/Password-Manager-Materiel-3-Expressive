@@ -1,4 +1,4 @@
-![App Icon](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png | width=200)
+<img src="https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png" width="200" height="200" />
 
 # Passwords | Materal 3 Password Manager
 ## Description
