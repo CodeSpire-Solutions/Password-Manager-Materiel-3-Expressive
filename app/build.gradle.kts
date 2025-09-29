@@ -15,7 +15,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.4.1"
+        versionName = "0.4.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,7 +65,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation("androidx.activity:activity-ktx:1.10.1")
-
     implementation("androidx.fragment:fragment-ktx:1.8.9")
 
     // Compose Material3

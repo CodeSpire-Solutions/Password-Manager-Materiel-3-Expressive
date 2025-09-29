@@ -37,7 +37,7 @@ class MainActivity : FragmentActivity() {
         val repo = PasswordRepository(this)
 
         setContent {
-            PasswordViewerTheme {
+            AppThemed {
                 var passwords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
                 var pendingUnlock by remember { mutableStateOf(false) }
 
@@ -58,13 +58,14 @@ class MainActivity : FragmentActivity() {
 
                 if (!unlocked) {
                     UnlockScreen {
-                        if (repo.hasLocalData()) {
-                            passwords = repo.loadPasswords()
-                            unlocked = true
-                        } else {
-                            pendingUnlock = true
-                            launcher.launch(arrayOf("text/*", "application/csv"))
-                        }
+                            if (repo.hasLocalData()) {
+                                passwords = repo.loadPasswords()
+                                unlocked = true
+                            } else {
+                                pendingUnlock = true
+                                launcher.launch(arrayOf("text/*", "application/csv"))
+                            }
+
                     }
                 } else {
                     NavHost(navController, startDestination = "list") {

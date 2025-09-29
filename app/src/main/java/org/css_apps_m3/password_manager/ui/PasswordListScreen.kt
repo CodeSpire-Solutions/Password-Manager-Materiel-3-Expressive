@@ -14,7 +14,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
+import org.css_apps_m3.password_manager.AddFab
 import org.css_apps_m3.password_manager.model.PasswordEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,11 +58,7 @@ fun PasswordListScreen(
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("add") }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Password")
-            }
-        }
+        floatingActionButton = { AddFab(navController) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -76,7 +74,7 @@ fun PasswordListScreen(
                     .fillMaxWidth()
                     .padding(8.dp),
                 singleLine = true,
-                shape = RoundedCornerShape(50), // Runde Search-Leiste
+                shape = RoundedCornerShape(50), // Round Search field
                 textStyle = LocalTextStyle.current.copy(fontSize = 16.sp)
             )
 
@@ -116,3 +114,4 @@ fun extractDomain(url: String): String {
         url.substringAfterLast("@").substringAfter("://")
     }
 }
+fun Int.toColor(): Color = Color(this)

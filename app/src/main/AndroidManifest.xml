@@ -3,7 +3,7 @@
     package="org.css_apps_m3.password_manager">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- Optional: Fingerabdruckberechtigung für ältere APIs -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <application

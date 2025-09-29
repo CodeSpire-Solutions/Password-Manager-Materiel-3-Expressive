@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +19,7 @@ import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
 import org.css_apps_m3.password_manager.util.CsvReader
+import org.css_apps_m3.password_manager.AppThemed
 
 class SetupActivity : ComponentActivity() {
 
@@ -26,6 +28,8 @@ class SetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         repo = PasswordRepository(this)
+
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
         var importedPasswords: List<org.css_apps_m3.password_manager.model.PasswordEntry>? = null
 
@@ -42,14 +46,15 @@ class SetupActivity : ComponentActivity() {
         }
 
         setContent {
-            PasswordViewerTheme {
+            AppThemed {
                 var password by remember { mutableStateOf("") }
                 var biometricsEnabled by remember { mutableStateOf(false) }
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(24.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
                     OutlinedTextField(
@@ -71,6 +76,8 @@ class SetupActivity : ComponentActivity() {
                         )
                         Text(
                             text = "Activate Biometric Authentication",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -81,7 +88,9 @@ class SetupActivity : ComponentActivity() {
                         onClick = { csvLauncher.launch("text/*") },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Import CSV")
+                        Text("Import CSV",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -107,7 +116,9 @@ class SetupActivity : ComponentActivity() {
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Complete Setup")
+                        Text("Complete Setup",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -131,7 +142,9 @@ class SetupActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) {
-                        Text("Start from Scratch")
+                        Text("Start from Scratch",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground)
                     }
                 }
             }

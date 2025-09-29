@@ -1,10 +1,12 @@
 package org.css_apps_m3.password_manager.ui
 
 import android.content.Context
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -14,6 +16,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import org.css_apps_m3.password_manager.AccentColorPicker
+import org.css_apps_m3.password_manager.AppPrefs
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import java.io.OutputStreamWriter
 
@@ -28,11 +32,19 @@ fun SettingsScreen(
     var newPassword by remember { mutableStateOf("") }
     var biometricsEnabled by remember { mutableStateOf(false) }
 
-    // SharedPreferences für Theme
     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     var darkMode by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
+    var dynamicTheme by remember { mutableStateOf(prefs.getBoolean("dynamic_theme", false)) }
+    var customAccent by remember { mutableStateOf(prefs.getInt("custom_accent", 0xFF6200EE.toInt())) }
+    var cornerRadius by remember { mutableStateOf(prefs.getFloat("corner_radius", 12f)) }
 
-    // CSV Export Launcher
+    // --- CSV Export & Sync prefs as before ---
+    val syncPrefs = context.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
+    var serverUrl by remember { mutableStateOf(syncPrefs.getString("server_url", "") ?: "") }
+    var syncUser by remember { mutableStateOf(syncPrefs.getString("sync_user", "") ?: "") }
+    var syncPass by remember { mutableStateOf(syncPrefs.getString("sync_pass", "") ?: "") }
+    var syncEnabled by remember { mutableStateOf(syncPrefs.getBoolean("sync_enabled", false)) }
+
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv"),
         onResult = { uri ->
@@ -43,9 +55,7 @@ fun SettingsScreen(
                 } else {
                     context.contentResolver.openOutputStream(uri)?.use { out ->
                         OutputStreamWriter(out).use { writer ->
-                            // Header
                             writer.appendLine("name,url,username,password,note")
-                            // Data
                             passwords.forEach {
                                 writer.appendLine("${it.name},${it.url},${it.username},${it.password},${it.note}")
                             }
@@ -69,74 +79,188 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) { /*
-            // Theme Toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Dark Mode")
-                Switch(
-                    checked = darkMode,
-                    onCheckedChange = {
-                        darkMode = it
-                        prefs.edit().putBoolean("dark_mode", darkMode).apply()
-                        Toast.makeText(
-                            context,
-                            if (darkMode) "Dark Mode Enabled" else "Light Mode Enabled",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 32.dp) // extra padding at bottom
+        ) {
+            item {
+                Text("Appearance", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
+            }
+
+            // --- Dark Mode ---
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Dark Mode")
+                    Switch(
+                        checked = darkMode,
+                        onCheckedChange = {
+                            darkMode = it
+                            AppPrefs.saveDarkMode(context, darkMode)
+                        }
+                    )
+                }
+            }
+
+            // --- Dynamic Theme ---
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Dynamic Material You")
+                        Switch(
+                            checked = dynamicTheme,
+                            onCheckedChange = {
+                                dynamicTheme = it
+                                prefs.edit().putBoolean("dynamic_theme", dynamicTheme).apply()
+                                // Apply theme globally
+                                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                                    if (darkMode) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+                                    else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+                                )
+                            }
+                        )
+
+                    }
+                }
+            }
+
+            // --- Accent Color ---
+            item {
+                Text("Custom Accent Color", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                AccentColorPicker(
+                    selectedColor = customAccent,
+                    onColorSelected = {
+                        customAccent = it
+                        prefs.edit().putInt("custom_accent", customAccent).apply()
                     }
                 )
             }
 
-            Divider()
-            */
-
-            // Change Password
-            OutlinedTextField(
-                value = newPassword,
-                onValueChange = { newPassword = it },
-                label = { Text("New Master Password") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Button(
-                onClick = {
-                    if (newPassword.isBlank()) {
-                        Toast.makeText(context, "Password cannot be empty", Toast.LENGTH_SHORT).show()
-                    } else {
-                        saveMasterPassword(context, newPassword, biometricsEnabled)
-                        Toast.makeText(context, "Master password updated", Toast.LENGTH_SHORT).show()
-                        newPassword = ""
+            // --- Corner Radius ---
+            item {
+                Text("Corner Radius: ${cornerRadius.toInt()}dp")
+                Slider(
+                    value = cornerRadius,
+                    onValueChange = { cornerRadius = it },
+                    valueRange = 4f..32f,
+                    onValueChangeFinished = {
+                        prefs.edit().putFloat("corner_radius", cornerRadius).apply()
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Change Master Password")
+                )
             }
 
-            Divider()
+            item { Divider() }
 
-            // Export Button
-            Button(
-                onClick = {
-                    exportLauncher.launch("passwords_export.csv")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Export Passwords as CSV")
+            // --- Password Management ---
+            item {
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text("New Master Password") },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
+            item {
+                Button(
+                    onClick = {
+                        if (newPassword.isBlank()) {
+                            Toast.makeText(context, "Password cannot be empty", Toast.LENGTH_SHORT).show()
+                        } else {
+                            saveMasterPassword(context, newPassword, biometricsEnabled)
+                            Toast.makeText(context, "Master password updated", Toast.LENGTH_SHORT).show()
+                            newPassword = ""
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Change Master Password")
+                }
+            }
+
+            item { Divider() }
+
+            // --- Export ---
+            item {
+                Button(
+                    onClick = { exportLauncher.launch("passwords_export.csv") },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Export Passwords as CSV") }
+            }
+
+            item { Divider() }
+/*
+            // --- Sync Section ---
+            item { Text("Database Sync", style = MaterialTheme.typography.titleMedium) }
+
+            item {
+                OutlinedTextField(
+                    value = serverUrl,
+                    onValueChange = { serverUrl = it },
+                    label = { Text("Server URL") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = syncUser,
+                    onValueChange = { syncUser = it },
+                    label = { Text("Sync Username") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = syncPass,
+                    onValueChange = { syncPass = it },
+                    label = { Text("Sync Password") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Enable Sync")
+                    Switch(
+                        checked = syncEnabled,
+                        onCheckedChange = { syncEnabled = it }
+                    )
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        syncPrefs.edit()
+                            .putString("server_url", serverUrl)
+                            .putString("sync_user", syncUser)
+                            .putString("sync_pass", syncPass)
+                            .putBoolean("sync_enabled", syncEnabled)
+                            .apply()
+                        Toast.makeText(context, "Sync settings saved", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Sync Settings")
+                }
+            }
+
+ */
         }
     }
 }
-
 private fun saveMasterPassword(context: Context, password: String, biometricsEnabled: Boolean) {
     val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)

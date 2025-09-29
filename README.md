@@ -1,4 +1,4 @@
-<img src="https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png" width="200" height="200" />
+![App Icon](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png)
 
 # Passwords | Materal 3 Password Manager
 ## Description
@@ -20,7 +20,7 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 
 ## Release Channels
 - Stable Releases: [-](#)
-- Beta Releases: [v0.4.1](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.4.1)
+- Beta Releases: [v0.4.2](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.4.2)
 - Nightly Releases: [-](#)
 
 ## Fixes and Security Issues

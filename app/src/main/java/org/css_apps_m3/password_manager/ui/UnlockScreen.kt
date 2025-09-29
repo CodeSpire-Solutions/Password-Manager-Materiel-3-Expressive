@@ -1,8 +1,8 @@
 package org.css_apps_m3.password_manager.ui
 
 import android.content.Context
-import android.util.Log
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,10 +14,20 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import org.css_apps_m3.password_manager.AppThemed
+import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
+import org.css_apps_m3.password_manager.ui.ui.theme.PasswordManagerTheme
 import java.util.concurrent.Executor
 
 @Composable
-fun UnlockScreen(
+fun UnlockScreen(onUnlock: () -> Unit) {
+    AppThemed {
+        UnlockContent(onUnlock = onUnlock)
+    }
+}
+
+@Composable
+private fun UnlockContent(
     onUnlock: () -> Unit
 ) {
     val context = LocalContext.current
@@ -40,38 +50,36 @@ fun UnlockScreen(
     val storedPassword = encryptedPrefs.getString("master_password", null)
     val biometricsEnabled = encryptedPrefs.getBoolean("biometrics_enabled", false)
 
-    //Log.d("VaultDebug", "UnlockScreen -> storedPassword: $storedPassword")
-    //Log.d("VaultDebug", "UnlockScreen -> biometricsEnabled: $biometricsEnabled")
-    //Log.d("VaultDebug", "UnlockScreen -> context: $context")
-    //Log.d("VaultDebug", "UnlockScreen -> is FragmentActivity: ${context is FragmentActivity}")
-
-    // When biometric authentication is enabled -> start automatically
     if (biometricsEnabled) {
         LaunchedEffect(Unit) {
             if (context is FragmentActivity) {
                 triggerBiometricAuth(context) {
                     onUnlock()
                 }
-            } else {
-                //Log.e("VaultDebug", "UnlockScreen -> Context is no FragmentActivity, Biometric Auth not possible")
             }
         }
     }
 
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background) // <-- Add this
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Passwords", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            "Passwords",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
 
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Master Passwort") },
+            label = { Text("Master Password") },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -89,7 +97,9 @@ fun UnlockScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Unlock")
+            Text("Unlock",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -105,7 +115,7 @@ fun UnlockScreen(
             Text(it, color = MaterialTheme.colorScheme.error)
         }
     }
-}
+    }
 
 @Composable
 fun BiometricButton(context: Context, onUnlock: () -> Unit) {
@@ -132,7 +142,9 @@ fun BiometricButton(context: Context, onUnlock: () -> Unit) {
             onClick = { biometricPrompt.authenticate(promptInfo) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Unlock with Biometric")
+            Text("Unlock with Biometric",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground)
         }
     } else {
         //Log.e("VaultDebug", "BiometricButton -> No FragmentActivity Context!")
