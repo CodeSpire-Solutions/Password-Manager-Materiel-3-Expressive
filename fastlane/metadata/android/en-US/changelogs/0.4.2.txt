@@ -1,0 +1,4 @@
+Changelog:
+-Bug Fixes
+-Updated overall App UI
+-Dynamic Accent Colors based on MaterialYou Guidelines
