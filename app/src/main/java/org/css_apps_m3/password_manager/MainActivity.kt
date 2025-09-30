@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.*
+import org.css_apps_m3.password_manager.ui.EditPasswordScreen
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import org.css_apps_m3.password_manager.ui.*
@@ -90,7 +91,13 @@ class MainActivity : FragmentActivity() {
                             PasswordDetailScreen(
                                 domain = domain,
                                 accounts = accounts,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onEdit = { selectedAccounts ->
+                                    navController.currentBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set("edit_accounts", selectedAccounts)
+                                    navController.navigate("edit/${domain}")
+                                }
                             )
                         }
                         composable("add") {
@@ -104,6 +111,23 @@ class MainActivity : FragmentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
+                        composable("edit/{domain}") { backStackEntry ->
+                            val domain = backStackEntry.arguments?.getString("domain")
+                            val entry = repo.loadPasswords().find { it.url == domain } // single entry
+
+                            entry?.let {
+                                EditPasswordScreen(
+                                    entry = it, // pass the single entry
+                                    onSave = { updated ->
+                                        repo.updatePassword(updated) // update the entry in repository
+                                        navController.popBackStack()
+                                    },
+                                    onCancel = { navController.popBackStack() }
+                                )
+                            }
+                        }
+
+
                     }
                 }
             }

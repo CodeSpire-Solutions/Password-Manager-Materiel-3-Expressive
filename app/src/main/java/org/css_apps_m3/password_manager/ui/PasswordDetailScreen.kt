@@ -20,7 +20,12 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: () -> Unit) {
+fun PasswordDetailScreen(
+    domain: String,
+    accounts: List<PasswordEntry>,
+    onBack: () -> Unit,
+    onEdit: (List<PasswordEntry>) -> Unit // ✅ add this
+) {
     val context = LocalContext.current
 
     Scaffold(
@@ -30,6 +35,16 @@ fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: 
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (accounts.isNotEmpty()) {
+                        IconButton(onClick = { onEdit(accounts) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.pencil),
+                                contentDescription = "Edit"
+                            )
+                        }
                     }
                 }
             )
@@ -65,6 +80,7 @@ fun PasswordDetailScreen(domain: String, accounts: List<PasswordEntry>, onBack: 
         }
     }
 }
+
 
 @Composable
 fun DetailCard(label: String, value: String, context: Context) {

@@ -16,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PasswortManager">
         <activity
+            android:name=".ui.EditPasswordScreen"
+            android:exported="false"
+            android:label="@string/title_activity_edit_password_screen"
+            android:theme="@style/Theme.PasswortManager" />
+        <activity
             android:name=".ui.AddPasswordScreen"
             android:exported="false"
             android:label="@string/title_activity_add_password_screen"

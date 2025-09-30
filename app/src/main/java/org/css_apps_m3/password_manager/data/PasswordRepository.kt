@@ -57,4 +57,20 @@ class PasswordRepository(private val context: Context) {
         val type = object : TypeToken<List<PasswordEntry>>() {}.type
         return gson.fromJson(json, type) ?: emptyList()
     }
+
+    /**
+     * Update a password entry by matching domain + username.
+     * If not found, it will not change anything.
+     */
+    fun updatePassword(updatedEntry: PasswordEntry) {
+        val passwords = loadPasswords().toMutableList()
+        val index = passwords.indexOfFirst {
+            it.url == updatedEntry.url && it.username == updatedEntry.username
+        }
+
+        if (index != -1) {
+            passwords[index] = updatedEntry
+            saveLocal(passwords)
+        }
+    }
 }
