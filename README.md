@@ -4,6 +4,9 @@
 ## Description
 A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
 
+# We are searching for App Testers!
+Contact us at: [Apply for App-Tester](https://forms.gle/xepXAoPgrLiKmCso6)
+
 <a href="https://f-droid.org/packages/org.css_apps_m3.password_manager">
     <img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid"
