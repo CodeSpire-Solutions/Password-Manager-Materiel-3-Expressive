@@ -12,7 +12,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -28,6 +30,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val repo = remember { PasswordRepository(context) }
+    val hapticFeedback = LocalHapticFeedback.current
 
     var newPassword by remember { mutableStateOf("") }
     var biometricsEnabled by remember { mutableStateOf(false) }
@@ -37,6 +40,7 @@ fun SettingsScreen(
     var dynamicTheme by remember { mutableStateOf(prefs.getBoolean("dynamic_theme", false)) }
     var customAccent by remember { mutableStateOf(prefs.getInt("custom_accent", 0xFF6200EE.toInt())) }
     var cornerRadius by remember { mutableStateOf(prefs.getFloat("corner_radius", 12f)) }
+    var haptics by remember { mutableStateOf(prefs.getBoolean("haptics", true)) }
 
     // --- CSV Export & Sync prefs as before ---
     val syncPrefs = context.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
@@ -133,6 +137,23 @@ fun SettingsScreen(
                 }
             }
 
+            // --- Haptic feedback ---
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Haptic Feedback")
+                    Switch(
+                        checked = haptics,
+                        onCheckedChange = {
+                            haptics = it
+                            prefs.edit().putBoolean("haptics", haptics).apply()
+                        }
+                    )
+                }
+            }
+
             // --- Accent Color ---
             item {
                 Text("Custom Accent Color", style = MaterialTheme.typography.titleMedium)
@@ -151,9 +172,18 @@ fun SettingsScreen(
                 Text("Corner Radius: ${cornerRadius.toInt()}dp")
                 Slider(
                     value = cornerRadius,
-                    onValueChange = { cornerRadius = it },
+                    onValueChange = { newRadius ->
+                        val oldRadiusInt = cornerRadius.toInt()
+                        cornerRadius = newRadius
+                        if (haptics && cornerRadius.toInt() != oldRadiusInt) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                    },
                     valueRange = 4f..32f,
                     onValueChangeFinished = {
+                        if (haptics) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
                         prefs.edit().putFloat("corner_radius", cornerRadius).apply()
                     }
                 )

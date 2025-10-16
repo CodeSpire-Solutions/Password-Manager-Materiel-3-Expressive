@@ -8,14 +8,17 @@ import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
-import androidx.navigation.compose.*
-import org.css_apps_m3.password_manager.ui.EditPasswordScreen
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import org.css_apps_m3.password_manager.ui.*
-import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
 import org.css_apps_m3.password_manager.util.CsvReader
 
 @SuppressLint("RestrictedApi")
@@ -39,19 +42,14 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             AppThemed {
-                var passwords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
-                var pendingUnlock by remember { mutableStateOf(false) }
-
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.OpenDocument(),
                     onResult = { uri: Uri? ->
                         uri?.let {
                             val list = CsvReader.readPasswordsFromUri(this, it)
                             repo.saveLocal(list)
-                            passwords = list
                             unlocked = true
                         }
-                        pendingUnlock = false
                     }
                 )
 
@@ -59,18 +57,23 @@ class MainActivity : FragmentActivity() {
 
                 if (!unlocked) {
                     UnlockScreen {
-                            if (repo.hasLocalData()) {
-                                passwords = repo.loadPasswords()
-                                unlocked = true
-                            } else {
-                                pendingUnlock = true
-                                launcher.launch(arrayOf("text/*", "application/csv"))
-                            }
+                        if (repo.hasLocalData()) {
+                            repo.loadPasswords()
+                            unlocked = true
+                        } else {
+                            launcher.launch(arrayOf("text/*", "application/csv"))
+                        }
 
                     }
                 } else {
                     NavHost(navController, startDestination = "list") {
-                        composable("list") {
+                        composable(
+                            "list",
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
+                            exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
+                        ) {
                             PasswordListScreen(
                                 navController = navController,
                                 onClick = { domain, accounts ->
@@ -81,7 +84,13 @@ class MainActivity : FragmentActivity() {
                                 }
                             )
                         }
-                        composable("detail/{domain}") { backStackEntry ->
+                        composable(
+                            "detail/{domain}",
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
+                            exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
+                        ) { backStackEntry ->
                             val domain = backStackEntry.arguments?.getString("domain") ?: ""
                             val accounts = navController.previousBackStackEntry
                                 ?.savedStateHandle
@@ -100,18 +109,36 @@ class MainActivity : FragmentActivity() {
                                 }
                             )
                         }
-                        composable("add") {
+                        composable(
+                            "add",
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
+                            exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
+                        ) {
                             AddPasswordScreen(
                                 navController = navController,
                                 repository = repo
                             )
                         }
-                        composable("settings") {
+                        composable(
+                            "settings",
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
+                            exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
+                        ) {
                             SettingsScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
-                        composable("edit/{domain}") { backStackEntry ->
+                        composable(
+                            "edit/{domain}",
+                            enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
+                            exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
+                            popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
+                        ) { backStackEntry ->
                             val domain = backStackEntry.arguments?.getString("domain")
                             val entry = repo.loadPasswords().find { it.url == domain } // single entry
 
@@ -126,8 +153,6 @@ class MainActivity : FragmentActivity() {
                                 )
                             }
                         }
-
-
                     }
                 }
             }

@@ -3,6 +3,7 @@ package org.css_apps_m3.password_manager
 import android.content.Context
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
@@ -14,6 +15,7 @@ object AppPrefs {
     val dynamicTheme = MutableStateFlow(true)
     val customAccent = MutableStateFlow(0xFF6200EE.toInt())
     val cornerRadius = MutableStateFlow(12f)
+    val haptics = MutableStateFlow(true)
 
     fun load(context: Context) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -21,6 +23,7 @@ object AppPrefs {
         dynamicTheme.value = prefs.getBoolean("dynamic_theme", true)
         customAccent.value = prefs.getInt("custom_accent", 0xFF6200EE.toInt())
         cornerRadius.value = prefs.getFloat("corner_radius", 12f)
+        haptics.value = prefs.getBoolean("haptics", true)
     }
 
     fun saveDarkMode(context: Context, enabled: Boolean) {
@@ -45,6 +48,7 @@ fun AppThemed(content: @Composable () -> Unit) {
     val dynamicTheme by AppPrefs.dynamicTheme.collectAsState()
     val customAccent by AppPrefs.customAccent.collectAsState()
     val cornerRadius by AppPrefs.cornerRadius.collectAsState()
+    val haptics by AppPrefs.haptics.collectAsState()
 
     PasswordViewerTheme(
         darkTheme = darkMode,
@@ -52,6 +56,14 @@ fun AppThemed(content: @Composable () -> Unit) {
         customAccent = customAccent,
         cornerRadius = cornerRadius
     ) {
-        content()
+        if (haptics) {
+            CompositionLocalProvider(
+                LocalHapticFeedback provides LocalHapticFeedback.current
+            ) {
+                content()
+            }
+        } else {
+            content()
+        }
     }
 }

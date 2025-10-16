@@ -110,7 +110,7 @@ class SetupActivity : ComponentActivity() {
                                     .edit()
                                     .putBoolean("setup_done", true)
                                     .apply()
-                                startActivity(Intent(this@SetupActivity, MainActivity::class.java))
+                                startActivity(Intent(this@SetupActivity, DisclaimerActivity::class.java))
                                 finish()
                             }
                         },
@@ -122,30 +122,6 @@ class SetupActivity : ComponentActivity() {
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            if (password.isBlank()) {
-                                Toast.makeText(this@SetupActivity, "Please enter Password", Toast.LENGTH_SHORT).show()
-                            } else {
-                                // Completely empty repo and start setup
-                                repo.saveLocal(emptyList())
-                                saveMasterPassword(password, biometricsEnabled)
-                                getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                                    .edit()
-                                    .putBoolean("setup_done", true)
-                                    .apply()
-                                startActivity(Intent(this@SetupActivity, MainActivity::class.java))
-                                finish()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) {
-                        Text("Start from Scratch",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground)
-                    }
                 }
             }
         }
