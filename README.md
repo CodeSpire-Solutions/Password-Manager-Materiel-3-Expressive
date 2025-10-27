@@ -20,6 +20,7 @@ Contact us at: [Apply for App-Tester](https://forms.gle/xepXAoPgrLiKmCso6)
 - Import CSV Passwords
 - Copy Usernames & Passwords
 - Biometric Authentication & Master Password Unlock
+- Material 3 Expressive Theme & Haptical Feedback System
 
 ## Release Channels
 - Stable Releases: [-](#)
