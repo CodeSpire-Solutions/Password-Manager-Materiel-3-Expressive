@@ -99,7 +99,7 @@ private fun UnlockContent(
         ) {
             Text("Unlock",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground)
+                color = MaterialTheme.colorScheme.background)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -144,7 +144,7 @@ fun BiometricButton(context: Context, onUnlock: () -> Unit) {
         ) {
             Text("Unlock with Biometric",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground)
+            color = MaterialTheme.colorScheme.background)
         }
     } else {
         //Log.e("VaultDebug", "BiometricButton -> No FragmentActivity Context!")

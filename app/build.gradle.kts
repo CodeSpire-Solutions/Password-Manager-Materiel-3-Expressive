@@ -14,8 +14,8 @@ android {
         applicationId = "org.css_apps_m3.password_manager"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.5.1"
+        versionCode = 5
+        versionName = "0.5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -69,7 +69,6 @@ dependencies {
 
     // Compose Material3
     implementation("androidx.compose.material3:material3:1.3.2")
-
 
     // Compose
     implementation("androidx.navigation:navigation-compose:2.9.3")

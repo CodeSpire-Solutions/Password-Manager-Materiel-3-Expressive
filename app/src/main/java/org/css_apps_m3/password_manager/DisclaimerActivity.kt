@@ -59,7 +59,7 @@ class DisclaimerActivity : ComponentActivity() {
                     ) {
                         Text("Accept",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground)
+                            color = MaterialTheme.colorScheme.background)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

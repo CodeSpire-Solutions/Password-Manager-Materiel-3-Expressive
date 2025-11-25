@@ -90,7 +90,7 @@ class SetupActivity : ComponentActivity() {
                     ) {
                         Text("Import CSV",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground)
+                            color = MaterialTheme.colorScheme.background)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -118,7 +118,7 @@ class SetupActivity : ComponentActivity() {
                     ) {
                         Text("Complete Setup",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground)
+                            color = MaterialTheme.colorScheme.background)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
