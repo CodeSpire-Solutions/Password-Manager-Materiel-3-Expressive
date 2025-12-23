@@ -10,6 +10,8 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
     height="80">
 </a>
 
+<br>
+
 <a href="https://play.google.com/store/apps/details?id=org.css_apps_m3.password_manager">
     <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
     alt="Get it on Google Play"
