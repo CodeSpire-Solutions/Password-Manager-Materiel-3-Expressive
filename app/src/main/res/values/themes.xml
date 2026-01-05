@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.PasswortManager" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.PasswortManager" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- These ensure the system bars are transparent so content draws behind them -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Optional: Ensure icons contrast correctly on API < 29 (handled automatically by enableEdgeToEdge usually) -->
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

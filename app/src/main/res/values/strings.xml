@@ -9,4 +9,5 @@
     <string name="title_activity_add_password_screen">AddPasswordScreen</string>
     <string name="title_activity_edit_password_screen">EditPasswordScreen</string>
     <string name="title_activity_disclaimer">DisclaimerActivity</string>
+    <string name="title_activity_import_screen">ImportScreen</string>
 </resources>

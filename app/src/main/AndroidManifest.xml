@@ -16,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PasswortManager">
         <activity
+            android:name=".ui.ui.theme.ImportScreen"
+            android:exported="false"
+            android:label="@string/title_activity_import_screen"
+            android:theme="@style/Theme.PasswortManager" />
+        <activity
             android:name=".DisclaimerActivity"
             android:exported="false"
             android:label="@string/title_activity_disclaimer"
