@@ -5,7 +5,7 @@
 A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
 
 <a href="https://f-droid.org/packages/org.css_apps_m3.password_manager">
-    <img src="[https://f-droid.org/badge/get-it-on.png](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Get_it_on_F-Droid.svg/2560px-Get_it_on_F-Droid.svg.png)"
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Get_it_on_F-Droid.svg/2560px-Get_it_on_F-Droid.svg.png"
     alt="Get it on F-Droid"
     height="80">
 </a>
