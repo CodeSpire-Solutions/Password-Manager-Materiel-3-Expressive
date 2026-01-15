@@ -79,10 +79,12 @@ class MainActivity : FragmentActivity() {
                             PasswordListScreen(
                                 navController = navController,
                                 onClick = { domain, accounts ->
+                                    navController.navigate("detail/$domain")
+
                                     navController.currentBackStackEntry
                                         ?.savedStateHandle
                                         ?.set("accounts", accounts)
-                                    navController.navigate("detail/$domain")
+
                                 }
                             )
                         }
@@ -93,21 +95,21 @@ class MainActivity : FragmentActivity() {
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
                         ) { backStackEntry ->
-                            val domain = backStackEntry.arguments?.getString("domain") ?: ""
-                            val accounts = navController.previousBackStackEntry
-                                ?.savedStateHandle
-                                ?.get<List<PasswordEntry>>("accounts")
-                                ?: emptyList()
+                            val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
+
+                            val accounts = repo.loadPasswords().filter {
+                                extractDomain(it.url) == domainArg
+                            }
 
                             PasswordDetailScreen(
-                                domain = domain,
+                                domain = domainArg,
                                 accounts = accounts,
                                 onBack = { navController.popBackStack() },
                                 onEdit = { selectedAccounts ->
                                     navController.currentBackStackEntry
                                         ?.savedStateHandle
                                         ?.set("edit_accounts", selectedAccounts)
-                                    navController.navigate("edit/${domain}")
+                                    navController.navigate("edit/${domainArg}")
                                 }
                             )
                         }
@@ -141,18 +143,30 @@ class MainActivity : FragmentActivity() {
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
                         ) { backStackEntry ->
-                            val domain = backStackEntry.arguments?.getString("domain")
-                            val entry = repo.loadPasswords().find { it.url == domain } // single entry
+                            val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
 
-                            entry?.let {
+                            val accounts = repo.loadPasswords().filter {
+                                extractDomain(it.url) == domainArg
+                            }
+
+                            val entry = accounts.firstOrNull()
+
+                            if (entry != null) {
                                 EditPasswordScreen(
-                                    entry = it, // pass the single entry
+                                    entry = entry,
                                     onSave = { updated ->
-                                        repo.updatePassword(updated) // update the entry in repository
+                                        repo.updatePassword(updated)
+                                        navController.popBackStack()
+                                    },
+                                    onDelete = { entryToDelete ->
+                                        repo.deletePassword(entryToDelete)
                                         navController.popBackStack()
                                     },
                                     onCancel = { navController.popBackStack() }
                                 )
+                            } else {
+                                // Fallback
+                                navController.popBackStack()
                             }
                         }
                     }

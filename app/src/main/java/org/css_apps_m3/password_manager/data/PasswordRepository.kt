@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import java.io.File
+import java.io.OutputStreamWriter
 
 class PasswordRepository(private val context: Context) {
     private val gson = Gson()
@@ -73,4 +74,53 @@ class PasswordRepository(private val context: Context) {
             saveLocal(passwords)
         }
     }
+
+    fun deletePassword(entryToDelete: PasswordEntry) {
+        val passwords = loadPasswords().toMutableList()
+        // Remove the entry. We assume the data class PasswordEntry implements equals() correctly
+        val wasRemoved = passwords.remove(entryToDelete)
+
+        // If simple removal fails, you can try matching manually:
+        // passwords.removeAll { it.url == entryToDelete.url && it.username == entryToDelete.username }
+
+        if (wasRemoved) {
+            saveLocal(passwords)
+        }
+    }
+
+    fun exportPasswordsToCsv(
+        context: Context,
+        uri: android.net.Uri
+    ): Int {
+        val passwords = loadPasswords() // Same source as UI
+
+        if (passwords.isEmpty()) return 0
+
+        context.contentResolver.openOutputStream(uri)?.use { out ->
+            OutputStreamWriter(out, Charsets.UTF_8).use { writer ->
+                writer.appendLine("name,url,username,password,note")
+
+                passwords.forEach { p ->
+                    fun esc(value: String?): String =
+                        value
+                            ?.replace("\"", "\"\"")
+                            ?.replace("\n", " ")
+                            ?.let { "\"$it\"" }
+                            ?: "\"\""
+
+                    writer.appendLine(
+                        listOf(
+                            esc(p.name),
+                            esc(p.url),
+                            esc(p.username),
+                            esc(p.password),
+                            esc(p.note)
+                        ).joinToString(",")
+                    )
+                }
+            }
+        }
+        return passwords.size
+    }
+
 }

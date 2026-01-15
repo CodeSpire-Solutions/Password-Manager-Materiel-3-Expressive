@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButton
@@ -38,11 +39,49 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 fun EditPasswordScreen(
     entry: PasswordEntry,
     onSave: (PasswordEntry) -> Unit,
+    onDelete: (PasswordEntry) -> Unit, // 1. Add onDelete callback
     onCancel: () -> Unit
 ) {
-    var username by remember { mutableStateOf(entry.username) }
-    var password by remember { mutableStateOf(entry.password) }
-    var note by remember { mutableStateOf(entry.note ?: "") }
+    val safeEntry = remember(entry) {
+        entry.copy(
+            name = entry.name.ifBlank { "" },
+            url = entry.url.ifBlank { "" },
+            username = entry.username.ifBlank { "" },
+            password = entry.password.ifBlank { "" },
+            note = entry.note ?: ""
+        )
+    }
+    var username by remember { mutableStateOf(safeEntry.username) }
+    var password by remember { mutableStateOf(safeEntry.password) }
+    var note by remember { mutableStateOf(safeEntry.note ?: "") }
+
+    // State for the delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // 2. Add the Confirmation Dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Password") },
+            text = { Text("Are you sure you want to delete this password? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete(safeEntry)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -54,22 +93,14 @@ fun EditPasswordScreen(
                     }
                 },
                 actions = {
-                    /*TextButton(onClick = {
-                        // Pass ALL fields together
-                        onSave(entry.copy(
-                            username = username,
-                            password = password,
-                            note = note
-                        ))
-                    }) {
-                        Text(
-                            "Save",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
+                    // 3. Add Delete Icon Button
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Password",
+                            tint = MaterialTheme.colorScheme.error // Make it red to indicate danger
                         )
                     }
-
-                     */
                 }
             )
         }
@@ -118,7 +149,7 @@ fun EditPasswordScreen(
             Button(
                 onClick = {
                     // Again, pass the full updated object
-                    onSave(entry.copy(
+                    onSave(safeEntry.copy(
                         //username = username,
                         password = password//,
                         //note = note

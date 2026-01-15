@@ -19,9 +19,8 @@ fun AccentColorPicker(
 ) {
     // Example palette inspired by Material 3 Expressive colors
     val colors = listOf(
-        0xFFB00020, 0xFF3700B3, 0xFF03DAC5, 0xFF018786,
-        0xFFFF9800, 0xFFFFC107, 0xFF4CAF50, 0xFF2196F3,
-        0xFFE91E63, 0xFF9C27B0, 0xFF795548, 0xFF607D8B
+        0xFFE91E63, 0xFF3700B3, 0xFF03DAC5, 0xFF9C27B0,
+        0xFFFF9800, 0xFFFFC107, 0xFF4CAF50, 0xFF2196F3
     )
 
     // Two rows of color swatches

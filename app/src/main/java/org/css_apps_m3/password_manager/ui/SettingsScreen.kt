@@ -21,7 +21,9 @@ import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.AccentColorPicker
 import org.css_apps_m3.password_manager.AppPrefs
 import org.css_apps_m3.password_manager.data.PasswordRepository
-import java.io.OutputStreamWriter
+import org.css_apps_m3.password_manager.model.PasswordEntry
+import org.css_apps_m3.password_manager.ui.theme.md_theme_light_secondary
+import org.css_apps_m3.password_manager.util.CsvReader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +31,9 @@ fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val activity = context as? androidx.activity.ComponentActivity
+        ?: return
+
     val repo = remember { PasswordRepository(context) }
     val hapticFeedback = LocalHapticFeedback.current
 
@@ -42,34 +47,134 @@ fun SettingsScreen(
     var cornerRadius by remember { mutableStateOf(prefs.getFloat("corner_radius", 12f)) }
     var haptics by remember { mutableStateOf(prefs.getBoolean("haptics", true)) }
 
-    // --- CSV Export & Sync prefs as before ---
-    val syncPrefs = context.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
-    var serverUrl by remember { mutableStateOf(syncPrefs.getString("server_url", "") ?: "") }
-    var syncUser by remember { mutableStateOf(syncPrefs.getString("sync_user", "") ?: "") }
-    var syncPass by remember { mutableStateOf(syncPrefs.getString("sync_pass", "") ?: "") }
-    var syncEnabled by remember { mutableStateOf(syncPrefs.getBoolean("sync_enabled", false)) }
+    var pendingImport by remember { mutableStateOf<List<PasswordEntry>?>(null) }
+    var showImportConflictDialog by remember { mutableStateOf(false) }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv"),
-        onResult = { uri ->
-            if (uri != null) {
-                val passwords = repo.loadPasswords()
-                if (passwords.isEmpty()) {
-                    Toast.makeText(context, "No passwords to export", Toast.LENGTH_SHORT).show()
-                } else {
-                    context.contentResolver.openOutputStream(uri)?.use { out ->
-                        OutputStreamWriter(out).use { writer ->
-                            writer.appendLine("name,url,username,password,note")
-                            passwords.forEach {
-                                writer.appendLine("${it.name},${it.url},${it.username},${it.password},${it.note}")
+    // --- CSV EXPORT ---
+    val exportLauncher = remember(activity) {
+        activity.activityResultRegistry.register(
+            "export_csv",
+            ActivityResultContracts.CreateDocument("text/csv")
+        ) { uri ->
+            if (uri == null) return@register
+
+            val count = repo.exportPasswordsToCsv(activity, uri)
+
+            Toast.makeText(
+                activity,
+                if (count == 0) "No passwords to export"
+                else "Exported $count passwords",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    // --- CSV IMPORT ---
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        val imported = CsvReader.readPasswordsFromUri(context, uri)
+
+        if (imported.isNullOrEmpty()) {
+            Toast.makeText(context, "CSV could not be read", Toast.LENGTH_SHORT).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        val existing = repo.loadPasswords()
+
+        val hasDuplicates = imported.any { imp ->
+            existing.any { it.url == imp.url && it.username == imp.username }
+        }
+
+        if (hasDuplicates) {
+            pendingImport = imported
+            showImportConflictDialog = true
+        } else {
+            repo.saveLocal(existing + imported)
+            Toast.makeText(context, "Imported ${imported.size} passwords", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    if (showImportConflictDialog && pendingImport != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showImportConflictDialog = false
+                pendingImport = null
+            },
+            title = {
+                Text("Duplicate passwords found")
+            },
+            text = {
+                Text(
+                    "Some passwords already exist.\n\n" +
+                            "Do you want to replace existing entries or skip duplicates?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val existing = repo.loadPasswords().toMutableList()
+
+                        pendingImport!!.forEach { imp ->
+                            val index = existing.indexOfFirst {
+                                it.url == imp.url && it.username == imp.username
+                            }
+                            if (index >= 0) {
+                                existing[index] = imp // REPLACE
+                            } else {
+                                existing.add(imp)
                             }
                         }
+
+                        repo.saveLocal(existing)
+
+                        Toast.makeText(
+                            context,
+                            "Passwords imported (duplicates replaced)",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        showImportConflictDialog = false
+                        pendingImport = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Replace")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val existing = repo.loadPasswords().toMutableList()
+
+                        pendingImport!!.forEach { imp ->
+                            val exists = existing.any {
+                                it.url == imp.url && it.username == imp.username
+                            }
+                            if (!exists) existing.add(imp)
+                        }
+
+                        repo.saveLocal(existing)
+
+                        Toast.makeText(
+                            context,
+                            "Passwords imported (duplicates skipped)",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        showImportConflictDialog = false
+                        pendingImport = null
                     }
-                    Toast.makeText(context, "Passwords exported", Toast.LENGTH_SHORT).show()
+                ) {
+                    Text("Skip")
                 }
             }
-        }
-    )
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -89,10 +194,15 @@ fun SettingsScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp) // extra padding at bottom
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
+
             item {
-                Text("Appearance", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
+                Text(
+                    "Appearance",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
 
             // --- Dark Mode ---
@@ -124,20 +234,16 @@ fun SettingsScreen(
                             checked = dynamicTheme,
                             onCheckedChange = {
                                 dynamicTheme = it
-                                prefs.edit().putBoolean("dynamic_theme", dynamicTheme).apply()
-                                // Apply theme globally
-                                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
-                                    if (darkMode) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-                                    else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-                                )
+                                prefs.edit()
+                                    .putBoolean("dynamic_theme", dynamicTheme)
+                                    .apply()
                             }
                         )
-
                     }
                 }
             }
 
-            // --- Haptic feedback ---
+            // --- Haptics ---
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -172,18 +278,15 @@ fun SettingsScreen(
                 Text("Corner Radius: ${cornerRadius.toInt()}dp")
                 Slider(
                     value = cornerRadius,
-                    onValueChange = { newRadius ->
-                        val oldRadiusInt = cornerRadius.toInt()
-                        cornerRadius = newRadius
-                        if (haptics && cornerRadius.toInt() != oldRadiusInt) {
+                    onValueChange = {
+                        val old = cornerRadius.toInt()
+                        cornerRadius = it
+                        if (haptics && old != it.toInt()) {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         }
                     },
                     valueRange = 4f..32f,
                     onValueChangeFinished = {
-                        if (haptics) {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
                         prefs.edit().putFloat("corner_radius", cornerRadius).apply()
                     }
                 )
@@ -191,7 +294,7 @@ fun SettingsScreen(
 
             item { Divider() }
 
-            // --- Password Management ---
+            // --- Master Password ---
             item {
                 OutlinedTextField(
                     value = newPassword,
@@ -200,13 +303,14 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             item {
                 Button(
                     onClick = {
                         if (newPassword.isBlank()) {
                             Toast.makeText(context, "Password cannot be empty", Toast.LENGTH_SHORT).show()
                         } else {
-                            saveMasterPassword(context, newPassword, biometricsEnabled)
+                            saveMasterPassword(context, newPassword)
                             Toast.makeText(context, "Master password updated", Toast.LENGTH_SHORT).show()
                             newPassword = ""
                         }
@@ -219,79 +323,34 @@ fun SettingsScreen(
 
             item { Divider() }
 
-            // --- Export ---
+            // --- EXPORT ---
             item {
                 Button(
                     onClick = { exportLauncher.launch("passwords_export.csv") },
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Export Passwords as CSV") }
-            }
-
-            item { Divider() }
-/*
-            // --- Sync Section ---
-            item { Text("Database Sync", style = MaterialTheme.typography.titleMedium) }
-
-            item {
-                OutlinedTextField(
-                    value = serverUrl,
-                    onValueChange = { serverUrl = it },
-                    label = { Text("Server URL") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = syncUser,
-                    onValueChange = { syncUser = it },
-                    label = { Text("Sync Username") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = syncPass,
-                    onValueChange = { syncPass = it },
-                    label = { Text("Sync Password") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Enable Sync")
-                    Switch(
-                        checked = syncEnabled,
-                        onCheckedChange = { syncEnabled = it }
-                    )
+                    Text("Export Passwords as CSV")
                 }
+                Spacer(Modifier.height(4.dp))
+                Text("WARNING: Passwords get exported decrypted and in plain text!", style = MaterialTheme.typography.titleSmall)
             }
 
-            item {
-                Button(
-                    onClick = {
-                        syncPrefs.edit()
-                            .putString("server_url", serverUrl)
-                            .putString("sync_user", syncUser)
-                            .putString("sync_pass", syncPass)
-                            .putBoolean("sync_enabled", syncEnabled)
-                            .apply()
-                        Toast.makeText(context, "Sync settings saved", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Save Sync Settings")
-                }
-            }
-
- */
+            // --- IMPORT ---
+            //item {
+            //    Button(
+            //        onClick = {
+            //            importLauncher.launch(arrayOf("text/*"))
+            //        },
+            //        modifier = Modifier.fillMaxWidth()
+            //    ) {
+            //        Text("Import Passwords from CSV")
+            //    }
+            //}
         }
     }
 }
-private fun saveMasterPassword(context: Context, password: String, biometricsEnabled: Boolean) {
+
+private fun saveMasterPassword(context: Context, password: String) {
     val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
@@ -306,6 +365,5 @@ private fun saveMasterPassword(context: Context, password: String, biometricsEna
 
     encryptedPrefs.edit()
         .putString("master_password", password)
-        .putBoolean("biometrics_enabled", biometricsEnabled)
         .apply()
 }
