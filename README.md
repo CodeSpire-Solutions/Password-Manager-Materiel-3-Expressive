@@ -25,7 +25,7 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 - Material 3 Expressive Theme & Haptical Feedback System
 
 ## Release Channels
-- Stable Releases: [v0.5.2](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.5.2)
+- Stable Releases: [v0.6.1](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.6.1)
 - Beta Releases: [v0.5.1 (OLD VERSION | USE STABLE INSTEAD)](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.5.1)
 
 ## Fixes and Security Issues

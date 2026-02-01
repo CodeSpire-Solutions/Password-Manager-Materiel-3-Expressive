@@ -15,8 +15,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import org.css_apps_m3.password_manager.AddFab
+import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,22 +31,38 @@ fun PasswordListScreen(
     navController: NavController,
     onClick: (String, List<PasswordEntry>) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val repo = remember { org.css_apps_m3.password_manager.data.PasswordRepository(context) }
+    val context = LocalContext.current
+    val repo = remember { PasswordRepository(context) }
 
-    var passwords by remember { mutableStateOf(emptyList<PasswordEntry>()) }
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    var passwords by remember { mutableStateOf(repo.loadPasswords()) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                passwords = repo.loadPasswords()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Load passwords automatically when the screen is opened
-    LaunchedEffect(Unit) {
-        passwords = repo.loadPasswords()
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == "list") {
+            passwords = repo.loadPasswords()
+        }
     }
 
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
 
     val grouped = passwords
-        .map { it.copy(url = extractDomain(it.url)) }
-        .filter { !it.url.startsWith("android://") }
-        .groupBy { it.url }
+        .filter { it.url.isNotBlank() && !it.url.startsWith("android://") }
+        .groupBy { extractDomain(it.url) }                  // Domain as Key
+        .toSortedMap(String.CASE_INSENSITIVE_ORDER)         // Alphabetic
 
     val filtered = grouped.filter { (domain, entries) ->
         domain.contains(searchQuery.text, ignoreCase = true) ||
@@ -106,12 +128,20 @@ fun PasswordListScreen(
     }
 }
 
-fun extractDomain(url: String): String {
+fun extractDomain(raw: String): String {
+    val url = raw.trim()
+
     return try {
-        val host = java.net.URI(url).host ?: url
-        if (host.startsWith("www.")) host.substring(4) else host
-    } catch (e: Exception) {
-        url.substringAfterLast("@").substringAfter("://")
+        val normalized =
+            if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
+        val host = android.net.Uri.parse(normalized).host ?: url
+        host.removePrefix("www.").trim()
+    } catch (_: Exception) {
+        url.substringAfterLast("@")
+            .substringAfter("://")
+            .substringBefore("/")
+            .removePrefix("www.")
+            .trim()
     }
 }
 fun Int.toColor(): Color = Color(this)

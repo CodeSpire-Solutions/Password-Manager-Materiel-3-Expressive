@@ -24,6 +24,7 @@ import org.css_apps_m3.password_manager.util.CsvReader
 
 @SuppressLint("RestrictedApi")
 class MainActivity : FragmentActivity() {
+
     private var unlocked by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,8 +35,7 @@ class MainActivity : FragmentActivity() {
         val isSetupDone = prefs.getBoolean("setup_done", false)
 
         if (!isSetupDone) {
-            val intent = Intent(this, SetupActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SetupActivity::class.java))
             finish()
             return
         }
@@ -44,33 +44,35 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             AppThemed {
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocument(),
-                    onResult = { uri: Uri? ->
-                        uri?.let {
-                            val list = CsvReader.readPasswordsFromUri(this, it)
+                val navController = rememberNavController()
+
+                val importLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument()
+                ) { uri: Uri? ->
+                    uri?.let {
+                        val list = CsvReader.readPasswordsFromUri(this, it)
+                        if (!list.isNullOrEmpty()) {
                             repo.saveLocal(list)
                             unlocked = true
                         }
                     }
-                )
-
-                val navController = rememberNavController()
+                }
 
                 if (!unlocked) {
                     UnlockScreen {
                         if (repo.hasLocalData()) {
+                            // Just ensure file can be read
                             repo.loadPasswords()
                             unlocked = true
                         } else {
-                            launcher.launch(arrayOf("text/*", "application/csv"))
+                            importLauncher.launch(arrayOf("text/*", "application/csv"))
                         }
-
                     }
                 } else {
-                    NavHost(navController, startDestination = "list") {
+                    NavHost(navController = navController, startDestination = "list") {
+
                         composable(
-                            "list",
+                            route = "list",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
@@ -78,18 +80,14 @@ class MainActivity : FragmentActivity() {
                         ) {
                             PasswordListScreen(
                                 navController = navController,
-                                onClick = { domain, accounts ->
+                                onClick = { domain, _ ->
                                     navController.navigate("detail/$domain")
-
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("accounts", accounts)
-
                                 }
                             )
                         }
+
                         composable(
-                            "detail/{domain}",
+                            route = "detail/{domain}",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
@@ -97,24 +95,30 @@ class MainActivity : FragmentActivity() {
                         ) { backStackEntry ->
                             val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
 
-                            val accounts = repo.loadPasswords().filter {
-                                extractDomain(it.url) == domainArg
+                            // Always read fresh from repo (single source of truth)
+                            val accounts = remember(domainArg) {
+                                repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
                             }
 
-                            PasswordDetailScreen(
-                                domain = domainArg,
-                                accounts = accounts,
-                                onBack = { navController.popBackStack() },
-                                onEdit = { selectedAccounts ->
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("edit_accounts", selectedAccounts)
-                                    navController.navigate("edit/${domainArg}")
-                                }
-                            )
+                            // Never allow an "empty" detail to render a blank screen
+                            if (accounts.isEmpty()) {
+                                // If nothing exists for this domain (e.g., after delete), go back to list.
+                                LaunchedEffect(Unit) { navController.popBackStack() }
+                            } else {
+                                PasswordDetailScreen(
+                                    domain = domainArg,
+                                    accounts = accounts,
+                                    onBack = { navController.popBackStack() },
+                                    onEdit = {
+                                        // Edit the first account for now (matches your current Edit screen)
+                                        navController.navigate("edit/$domainArg")
+                                    }
+                                )
+                            }
                         }
+
                         composable(
-                            "add",
+                            route = "add",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
@@ -125,8 +129,9 @@ class MainActivity : FragmentActivity() {
                                 repository = repo
                             )
                         }
+
                         composable(
-                            "settings",
+                            route = "settings",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
@@ -136,8 +141,9 @@ class MainActivity : FragmentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
+
                         composable(
-                            "edit/{domain}",
+                            route = "edit/{domain}",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
@@ -145,28 +151,40 @@ class MainActivity : FragmentActivity() {
                         ) { backStackEntry ->
                             val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
 
-                            val accounts = repo.loadPasswords().filter {
-                                extractDomain(it.url) == domainArg
+                            val accounts = remember(domainArg) {
+                                repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
                             }
 
                             val entry = accounts.firstOrNull()
 
-                            if (entry != null) {
+                            if (entry == null) {
+                                // Nothing to edit -> go back safely
+                                LaunchedEffect(Unit) { navController.popBackStack() }
+                            } else {
                                 EditPasswordScreen(
                                     entry = entry,
                                     onSave = { updated ->
                                         repo.updatePassword(updated)
-                                        navController.popBackStack()
+
+                                        // Hard reset to list to avoid any "empty detail" flashes
+                                        navController.navigate("list") {
+                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                            launchSingleTop = true
+                                            restoreState = false
+                                        }
                                     },
                                     onDelete = { entryToDelete ->
                                         repo.deletePassword(entryToDelete)
-                                        navController.popBackStack()
+
+                                        // Same reset behavior as save
+                                        navController.navigate("list") {
+                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                            launchSingleTop = true
+                                            restoreState = false
+                                        }
                                     },
                                     onCancel = { navController.popBackStack() }
                                 )
-                            } else {
-                                // Fallback
-                                navController.popBackStack()
                             }
                         }
                     }
@@ -177,7 +195,26 @@ class MainActivity : FragmentActivity() {
 
     override fun onPause() {
         super.onPause()
-        // When the app goes into the background → Lock
         unlocked = false
+    }
+}
+
+/**
+ * Robust domain extraction: handles raw domains, full URLs, whitespace and CRLF from CSV.
+ */
+private fun extractDomainStable(raw: String): String {
+    val url = raw.trim()
+
+    return try {
+        val normalized =
+            if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
+        val host = android.net.Uri.parse(normalized).host ?: url
+        host.removePrefix("www.").trim()
+    } catch (_: Exception) {
+        url.substringAfterLast("@")
+            .substringAfter("://")
+            .substringBefore("/")
+            .removePrefix("www.")
+            .trim()
     }
 }
