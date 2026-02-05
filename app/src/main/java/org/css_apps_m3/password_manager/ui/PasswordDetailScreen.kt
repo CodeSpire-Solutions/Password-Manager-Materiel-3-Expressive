@@ -24,7 +24,7 @@ fun PasswordDetailScreen(
     domain: String,
     accounts: List<PasswordEntry>,
     onBack: () -> Unit,
-    onEdit: (List<PasswordEntry>) -> Unit // ✅ add this
+    onEdit: (PasswordEntry) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -38,8 +38,9 @@ fun PasswordDetailScreen(
                     }
                 },
                 actions = {
-                    if (accounts.isNotEmpty()) {
-                        IconButton(onClick = { onEdit(accounts) }) {
+                    val first = accounts.firstOrNull()
+                    if (first != null) {
+                        IconButton(onClick = { onEdit(first) }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.pencil),
                                 contentDescription = "Edit"

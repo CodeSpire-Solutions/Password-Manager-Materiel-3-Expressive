@@ -109,9 +109,8 @@ class MainActivity : FragmentActivity() {
                                     domain = domainArg,
                                     accounts = accounts,
                                     onBack = { navController.popBackStack() },
-                                    onEdit = {
-                                        // Edit the first account for now (matches your current Edit screen)
-                                        navController.navigate("edit/$domainArg")
+                                    onEdit = { selectedEntry ->
+                                        navController.navigate("edit/${domainArg}/${Uri.encode(selectedEntry.username)}")
                                     }
                                 )
                             }
@@ -143,44 +142,50 @@ class MainActivity : FragmentActivity() {
                         }
 
                         composable(
-                            route = "edit/{domain}",
+                            route = "edit/{domain}/{username}",
                             enterTransition = { slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) },
                             exitTransition = { slideOutHorizontally(targetOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popEnterTransition = { slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) },
                             popExitTransition = { slideOutHorizontally(targetOffsetX = { 1000 }, animationSpec = tween(300)) }
                         ) { backStackEntry ->
                             val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
+                            val usernameArg = backStackEntry.arguments?.getString("username") ?: ""
+                            val decodedUsername = Uri.decode(usernameArg)
 
-                            val accounts = remember(domainArg) {
-                                repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
-                            }
+                            // Immer frisch aus Repo laden (und NICHT remember(...) ohne Key, sonst stale)
+                            val accounts = repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
 
-                            val entry = accounts.firstOrNull()
-
-                            if (entry == null) {
-                                // Nothing to edit -> go back safely
+                            if (accounts.isEmpty()) {
                                 LaunchedEffect(Unit) { navController.popBackStack() }
                             } else {
                                 EditPasswordScreen(
-                                    entry = entry,
+                                    domain = domainArg,
+                                    accounts = accounts,
+                                    initiallySelectedUsername = decodedUsername,
                                     onSave = { updated ->
                                         repo.updatePassword(updated)
-
-                                        // Hard reset to list to avoid any "empty detail" flashes
-                                        navController.navigate("list") {
-                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                        navController.navigate("detail/$domainArg") {
+                                            popUpTo("detail/$domainArg") { inclusive = true }
                                             launchSingleTop = true
                                             restoreState = false
                                         }
                                     },
                                     onDelete = { entryToDelete ->
                                         repo.deletePassword(entryToDelete)
-
-                                        // Same reset behavior as save
-                                        navController.navigate("list") {
-                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                            launchSingleTop = true
-                                            restoreState = false
+                                        // Wenn nach Delete keine Accounts mehr existieren -> zurück zur List
+                                        val remaining = repo.loadPasswords().any { extractDomainStable(it.url) == domainArg }
+                                        if (!remaining) {
+                                            navController.navigate("list") {
+                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                                launchSingleTop = true
+                                                restoreState = false
+                                            }
+                                        } else {
+                                            navController.navigate("detail/$domainArg") {
+                                                popUpTo("detail/$domainArg") { inclusive = true }
+                                                launchSingleTop = true
+                                                restoreState = false
+                                            }
                                         }
                                     },
                                     onCancel = { navController.popBackStack() }

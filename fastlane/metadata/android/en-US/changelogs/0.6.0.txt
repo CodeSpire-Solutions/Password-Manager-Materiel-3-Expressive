@@ -1,0 +1,3 @@
+Changelog:
+-Bug Fixes
+-Added Delete Password Function

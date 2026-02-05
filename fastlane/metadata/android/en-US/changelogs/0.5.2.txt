@@ -1,0 +1,2 @@
+Changelog:
+-Enabled Edge-to-Edge Display
