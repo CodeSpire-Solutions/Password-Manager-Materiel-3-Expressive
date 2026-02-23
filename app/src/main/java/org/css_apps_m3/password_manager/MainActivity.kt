@@ -25,6 +25,11 @@ import org.css_apps_m3.password_manager.util.CsvReader
 @SuppressLint("RestrictedApi")
 class MainActivity : FragmentActivity() {
 
+    companion object {
+        // Flag to prevent the app from locking when opening the file picker
+        var ignoreNextPause = false
+    }
+
     private var unlocked by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,7 +157,6 @@ class MainActivity : FragmentActivity() {
                             val usernameArg = backStackEntry.arguments?.getString("username") ?: ""
                             val decodedUsername = Uri.decode(usernameArg)
 
-                            // Immer frisch aus Repo laden (und NICHT remember(...) ohne Key, sonst stale)
                             val accounts = repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
 
                             if (accounts.isEmpty()) {
@@ -162,8 +166,11 @@ class MainActivity : FragmentActivity() {
                                     domain = domainArg,
                                     accounts = accounts,
                                     initiallySelectedUsername = decodedUsername,
-                                    onSave = { updated ->
-                                        repo.updatePassword(updated)
+
+                                    // Now oldEntry + updatedEntry
+                                    onSave = { oldEntry, updated ->
+                                        repo.updatePasswordWithOldKey(oldEntry.url, oldEntry.username, updated)
+
                                         navController.navigate("detail/$domainArg") {
                                             popUpTo("detail/$domainArg") { inclusive = true }
                                             launchSingleTop = true
@@ -172,7 +179,7 @@ class MainActivity : FragmentActivity() {
                                     },
                                     onDelete = { entryToDelete ->
                                         repo.deletePassword(entryToDelete)
-                                        // Wenn nach Delete keine Accounts mehr existieren -> zurück zur List
+
                                         val remaining = repo.loadPasswords().any { extractDomainStable(it.url) == domainArg }
                                         if (!remaining) {
                                             navController.navigate("list") {
@@ -200,7 +207,14 @@ class MainActivity : FragmentActivity() {
 
     override fun onPause() {
         super.onPause()
-        unlocked = false
+
+        if (ignoreNextPause) {
+            // Reset the flag but do NOT lock the app
+            ignoreNextPause = false
+        } else {
+            // Normal behavior: lock the app when it goes to the background
+            unlocked = false
+        }
     }
 }
 

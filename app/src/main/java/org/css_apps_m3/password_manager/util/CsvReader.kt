@@ -24,7 +24,8 @@ object CsvReader {
                                 url = it[1],
                                 username = it[2],
                                 password = it[3],
-                                note = it[4]
+                                // Safe access: Only read 'note' if the column actually exists
+                                note = if (it.size > 4) it[4] else ""
                             )
                         )
                     }

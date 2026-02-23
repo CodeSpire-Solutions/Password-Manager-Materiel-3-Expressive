@@ -20,6 +20,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.AccentColorPicker
 import org.css_apps_m3.password_manager.AppPrefs
+import org.css_apps_m3.password_manager.MainActivity
 import org.css_apps_m3.password_manager.data.PasswordRepository
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import org.css_apps_m3.password_manager.ui.theme.md_theme_light_secondary
@@ -336,16 +337,20 @@ fun SettingsScreen(
             }
 
             // --- IMPORT ---
-            //item {
-            //    Button(
-            //        onClick = {
-            //            importLauncher.launch(arrayOf("text/*"))
-            //        },
-            //        modifier = Modifier.fillMaxWidth()
-            //    ) {
-            //        Text("Import Passwords from CSV")
-            //    }
-            //}
+            item {
+                Button(
+                    onClick = {
+                        // Prevent the MainActivity from locking the app
+                        MainActivity.ignoreNextPause = true
+
+                        // "text/*" covers CSVs, but you can also be more explicit
+                        importLauncher.launch(arrayOf("text/*", "text/comma-separated-values", "text/csv"))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Import Passwords from CSV")
+                }
+            }
         }
     }
 }

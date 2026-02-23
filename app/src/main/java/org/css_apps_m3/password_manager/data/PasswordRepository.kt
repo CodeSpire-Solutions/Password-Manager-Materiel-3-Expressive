@@ -9,16 +9,25 @@ import org.css_apps_m3.password_manager.model.PasswordEntry
 import java.io.File
 import java.io.OutputStreamWriter
 
-class PasswordRepository(private val context: Context) {
-    private val gson = Gson()
+class PasswordRepository {
+    private val context: Context
+
+    constructor(context: Context) {
+        this.context = context
+        this.gson = Gson()
+        this.masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        this.file = File(context.filesDir, "passwords.json.enc")
+    }
+
+    private val gson: Gson
 
     // MasterKey in the Android Keystore with AES256
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val masterKey: MasterKey
 
     // internal encrypted file
-    private val file = File(context.filesDir, "passwords.json.enc")
+    private val file: File
 
     fun hasLocalData(): Boolean = file.exists()
 
@@ -63,12 +72,9 @@ class PasswordRepository(private val context: Context) {
      * Update a password entry by matching domain + username.
      * If not found, it will not change anything.
      */
-    fun updatePassword(updatedEntry: PasswordEntry) {
+    fun updatePasswordWithOldKey(oldUrl: String, oldUsername: String, updatedEntry: PasswordEntry) {
         val passwords = loadPasswords().toMutableList()
-        val index = passwords.indexOfFirst {
-            it.url == updatedEntry.url && it.username == updatedEntry.username
-        }
-
+        val index = passwords.indexOfFirst { it.url == oldUrl && it.username == oldUsername }
         if (index != -1) {
             passwords[index] = updatedEntry
             saveLocal(passwords)

@@ -16,7 +16,7 @@ fun EditPasswordScreen(
     domain: String,
     accounts: List<PasswordEntry>,
     initiallySelectedUsername: String?,
-    onSave: (PasswordEntry) -> Unit,
+    onSave: (oldEntry: PasswordEntry, updatedEntry: PasswordEntry) -> Unit,
     onDelete: (PasswordEntry) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -31,6 +31,7 @@ fun EditPasswordScreen(
         )
     }
 
+    // Original entry from list (this is the "oldEntry" key!)
     val selectedEntry = remember(accounts, selectedUsername) {
         accounts.firstOrNull { it.username == selectedUsername }
     }
@@ -40,6 +41,7 @@ fun EditPasswordScreen(
         return
     }
 
+    // Safe copy for UI (never null/blank)
     val safeEntry = remember(selectedEntry) {
         selectedEntry.copy(
             name = selectedEntry.name.ifBlank { "" },
@@ -50,6 +52,8 @@ fun EditPasswordScreen(
         )
     }
 
+    // Editable fields
+    var username by remember(safeEntry) { mutableStateOf(safeEntry.username) }
     var password by remember(safeEntry) { mutableStateOf(safeEntry.password) }
     var note by remember(safeEntry) { mutableStateOf(safeEntry.note ?: "") }
 
@@ -65,7 +69,8 @@ fun EditPasswordScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        onDelete(safeEntry)
+                        // Delete the currently selected ORIGINAL entry
+                        onDelete(selectedEntry)
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) { Text("Delete") }
@@ -105,6 +110,7 @@ fun EditPasswordScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // Account selector (only when multiple exist)
             if (usernames.size > 1) {
                 ExposedDropdownMenuBox(
                     expanded = accountMenuExpanded,
@@ -143,6 +149,15 @@ fun EditPasswordScreen(
             }
 
             OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                singleLine = true
+            )
+
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
@@ -151,26 +166,27 @@ fun EditPasswordScreen(
                 singleLine = true
             )
 
-            // Optional wieder aktivieren:
-            // OutlinedTextField(
-            //     value = note,
-            //     onValueChange = { note = it },
-            //     label = { Text("Note (optional)") },
-            //     modifier = Modifier.fillMaxWidth(),
-            //     shape = MaterialTheme.shapes.medium,
-            //     minLines = 3
-            // )
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Note (optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                minLines = 3
+            )
 
             Spacer(Modifier.weight(1f))
 
             Button(
                 onClick = {
-                    onSave(
-                        safeEntry.copy(
-                            password = password,
-                            note = note.ifBlank { null }
-                        )
+                    val updatedEntry = safeEntry.copy(
+                        username = username.trim(),
+                        password = password,
+                        note = note.trim().ifBlank { null }
                     )
+
+                    // IMPORTANT: pass oldEntry (selectedEntry) + updatedEntry
+                    onSave(selectedEntry, updatedEntry)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large
