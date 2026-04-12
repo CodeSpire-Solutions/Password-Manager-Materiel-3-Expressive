@@ -12,7 +12,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -101,14 +106,24 @@ class MainActivity : FragmentActivity() {
                             val domainArg = backStackEntry.arguments?.getString("domain") ?: ""
 
                             // Always read fresh from repo (single source of truth)
-                            val accounts = remember(domainArg) {
-                                repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
-                            }
+                            val accounts = repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
 
                             // Never allow an "empty" detail to render a blank screen
                             if (accounts.isEmpty()) {
                                 // If nothing exists for this domain (e.g., after delete), go back to list.
-                                LaunchedEffect(Unit) { navController.popBackStack() }
+                                LaunchedEffect(Unit) {
+                                    val popped = navController.popBackStack("list", false)
+                                    if (!popped) {
+                                        navController.navigate("list") {
+                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                            launchSingleTop = true
+                                            restoreState = false
+                                        }
+                                    }
+                                }
+                                Surface(color = MaterialTheme.colorScheme.background) {
+                                    Box(modifier = Modifier.fillMaxSize())
+                                }
                             } else {
                                 PasswordDetailScreen(
                                     domain = domainArg,
@@ -160,7 +175,19 @@ class MainActivity : FragmentActivity() {
                             val accounts = repo.loadPasswords().filter { extractDomainStable(it.url) == domainArg }
 
                             if (accounts.isEmpty()) {
-                                LaunchedEffect(Unit) { navController.popBackStack() }
+                                LaunchedEffect(Unit) {
+                                    val popped = navController.popBackStack("list", false)
+                                    if (!popped) {
+                                        navController.navigate("list") {
+                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                            launchSingleTop = true
+                                            restoreState = false
+                                        }
+                                    }
+                                }
+                                Surface(color = MaterialTheme.colorScheme.background) {
+                                    Box(modifier = Modifier.fillMaxSize())
+                                }
                             } else {
                                 EditPasswordScreen(
                                     domain = domainArg,
@@ -182,10 +209,13 @@ class MainActivity : FragmentActivity() {
 
                                         val remaining = repo.loadPasswords().any { extractDomainStable(it.url) == domainArg }
                                         if (!remaining) {
-                                            navController.navigate("list") {
-                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                                launchSingleTop = true
-                                                restoreState = false
+                                            val popped = navController.popBackStack("list", false)
+                                            if (!popped) {
+                                                navController.navigate("list") {
+                                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                                    launchSingleTop = true
+                                                    restoreState = false
+                                                }
                                             }
                                         } else {
                                             navController.navigate("detail/$domainArg") {

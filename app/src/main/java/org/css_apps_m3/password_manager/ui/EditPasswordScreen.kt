@@ -24,31 +24,40 @@ fun EditPasswordScreen(
         accounts.map { it.username }.distinct().sortedBy { it.lowercase() }
     }
 
-    var selectedUsername by remember {
-        mutableStateOf(
-            initiallySelectedUsername?.takeIf { init -> usernames.contains(init) }
-                ?: usernames.firstOrNull().orEmpty()
-        )
+    val initialSelection = remember(usernames, initiallySelectedUsername) {
+        if (usernames.size <= 1) {
+            usernames.firstOrNull()
+        } else {
+            // Force explicit selection when multiple accounts exist
+            null
+        }
+    }
+
+    var selectedUsername by remember(usernames, initialSelection) {
+        mutableStateOf(initialSelection)
     }
 
     // Original entry from list (this is the "oldEntry" key!)
     val selectedEntry = remember(accounts, selectedUsername) {
-        accounts.firstOrNull { it.username == selectedUsername }
-    }
-
-    if (selectedEntry == null) {
-        LaunchedEffect(Unit) { onCancel() }
-        return
+        selectedUsername?.let { username ->
+            accounts.firstOrNull { it.username == username }
+        }
     }
 
     // Safe copy for UI (never null/blank)
     val safeEntry = remember(selectedEntry) {
-        selectedEntry.copy(
+        selectedEntry?.copy(
             name = selectedEntry.name.ifBlank { "" },
             url = selectedEntry.url.ifBlank { "" },
             username = selectedEntry.username.ifBlank { "" },
             password = selectedEntry.password.ifBlank { "" },
             note = selectedEntry.note ?: ""
+        ) ?: PasswordEntry(
+            name = "",
+            url = "",
+            username = "",
+            password = "",
+            note = ""
         )
     }
 
@@ -60,7 +69,7 @@ fun EditPasswordScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var accountMenuExpanded by remember { mutableStateOf(false) }
 
-    if (showDeleteDialog) {
+    if (showDeleteDialog && selectedEntry != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Password") },
@@ -91,7 +100,10 @@ fun EditPasswordScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        enabled = selectedEntry != null
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete Password",
@@ -117,13 +129,14 @@ fun EditPasswordScreen(
                     onExpandedChange = { accountMenuExpanded = !accountMenuExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedUsername,
+                        value = selectedUsername ?: "",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Account") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(),
+                        placeholder = { Text("Select an account") },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountMenuExpanded)
                         }
@@ -148,13 +161,22 @@ fun EditPasswordScreen(
                 Text("Account: ${safeEntry.username}", style = MaterialTheme.typography.bodyMedium)
             }
 
+            if (usernames.size > 1 && selectedEntry == null) {
+                Text(
+                    text = "Please select an account to edit or delete.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Username") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
-                singleLine = true
+                singleLine = true,
+                enabled = selectedEntry != null
             )
 
             OutlinedTextField(
@@ -163,7 +185,8 @@ fun EditPasswordScreen(
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
-                singleLine = true
+                singleLine = true,
+                enabled = selectedEntry != null
             )
 
             OutlinedTextField(
@@ -172,7 +195,8 @@ fun EditPasswordScreen(
                 label = { Text("Note (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
-                minLines = 3
+                minLines = 3,
+                enabled = selectedEntry != null
             )
 
             Spacer(Modifier.weight(1f))
@@ -186,10 +210,13 @@ fun EditPasswordScreen(
                     )
 
                     // IMPORTANT: pass oldEntry (selectedEntry) + updatedEntry
-                    onSave(selectedEntry, updatedEntry)
+                    selectedEntry?.let { oldEntry ->
+                        onSave(oldEntry, updatedEntry)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                enabled = selectedEntry != null
             ) {
                 Text("Save Changes")
             }

@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
@@ -56,14 +60,19 @@ fun AppThemed(content: @Composable () -> Unit) {
         customAccent = customAccent,
         cornerRadius = cornerRadius
     ) {
-        if (haptics) {
-            CompositionLocalProvider(
-                LocalHapticFeedback provides LocalHapticFeedback.current
-            ) {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (haptics) {
+                CompositionLocalProvider(
+                    LocalHapticFeedback provides LocalHapticFeedback.current
+                ) {
+                    content()
+                }
+            } else {
                 content()
             }
-        } else {
-            content()
         }
     }
 }
