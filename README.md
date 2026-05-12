@@ -2,7 +2,7 @@
 
 # Passwords | Materal 3 Password Manager
 ## Description
-A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are getting imported.
+Passwords combines strong local encryption, clean Material 3 design, and optional SQL cloud sync in a focused Android experience. With Autofill, CSV portability, and multi-device sync, your credentials stay secure, organized, and available when you need them.
 
 <a href="https://f-droid.org/packages/org.css_apps_m3.password_manager">
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Get_it_on_F-Droid.svg/960px-Get_it_on_F-Droid.svg.png"
@@ -15,8 +15,8 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
     alt="Get it on Google Play" height="80">
 </a>
 
-## Planned Updates
-- Sync all of your Passwords on your personal DB. (SQLite)
+## SQL Sync Documentation & Tutorial
+[Documentation.md](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/CLOUD_SYNC_SETUP.md)
 
 ## Features
 - Import CSV Passwords
@@ -25,7 +25,7 @@ A Materiel 3 Password Manager. Import your CSV Passwords and your passwords are 
 - Material 3 Expressive Theme & Haptical Feedback System
 
 ## Release Channels
-- Stable Releases: [v0.7.1](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.7.1)
+- Stable Releases: [v1.0.0](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/1.0.0)
 - Beta Releases: [v0.5.1 (OLD VERSION | USE STABLE INSTEAD)](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/0.5.1)
 
 ## Fixes and Security Issues

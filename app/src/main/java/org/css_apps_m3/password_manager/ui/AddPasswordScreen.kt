@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -17,7 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.css_apps_m3.password_manager.R
 import org.css_apps_m3.password_manager.data.PasswordRepository
+import org.css_apps_m3.password_manager.data.SqlSyncManager
 import org.css_apps_m3.password_manager.model.PasswordEntry
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +28,9 @@ fun AddPasswordScreen(
     navController: NavController,
     repository: PasswordRepository
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val syncManager = remember { SqlSyncManager(context) }
     var domain by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -55,6 +61,12 @@ fun AddPasswordScreen(
                                 val currentList = repository.loadPasswords().toMutableList()
                                 currentList.add(newEntry)
                                 repository.saveLocal(currentList)
+                                val syncConfig = SqlSyncManager.loadConfig(context)
+                                if (syncConfig.autoSync) {
+                                    coroutineScope.launch {
+                                        syncManager.sync(syncConfig, currentList)
+                                    }
+                                }
 
                                 //Log.d("AddPasswordScreen", "New Password Saved: $newEntry")
 
@@ -106,7 +118,7 @@ fun AddPasswordScreen(
                             painter = painterResource(
                                 iconId
                             ),
-                            contentDescription = if (passwordVisible) "Passwort verstecken" else "Passwort anzeigen"
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
                         )
                     }
                 },

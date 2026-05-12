@@ -12,10 +12,10 @@ android {
 
     defaultConfig {
         applicationId = "org.css_apps_m3.password_manager"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.7.1"
+        versionCode = 15
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +38,22 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+
+    packaging {
+        resources {
+            // JDBC drivers bundle META-INF files that conflict with each other
+            excludes += listOf(
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/DEPENDENCIES",
+                "META-INF/*.kotlin_module",
+                "META-INF/INDEX.LIST",
+                "META-INF/io.netty.versions.properties"
+            )
+        }
     }
 }
 
@@ -70,6 +86,9 @@ dependencies {
     // Compose Material3
     implementation("androidx.compose.material3:material3:1.3.2")
 
+    // Extended Material Icons (Visibility, Error, CheckCircle, etc.)
+    implementation("androidx.compose.material:material-icons-extended")
+
     // Compose
     implementation("androidx.navigation:navigation-compose:2.9.3")
 
@@ -81,4 +100,11 @@ dependencies {
 
     // AndroidX Security für EncryptedSharedPreferences
     implementation("androidx.security:security-crypto:1.1.0")
+
+    // --- SQL Cloud Sync (JDBC) ---
+    // MySQL / MariaDB direct JDBC driver (Android-compatible legacy line)
+    implementation("mysql:mysql-connector-java:5.1.49")
+    // Kotlin Coroutines (für Dispatchers.IO bei DB-Operationen)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 }

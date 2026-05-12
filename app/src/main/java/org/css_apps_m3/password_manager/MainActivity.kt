@@ -23,9 +23,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.css_apps_m3.password_manager.data.PasswordRepository
+import org.css_apps_m3.password_manager.data.SqlSyncManager
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import org.css_apps_m3.password_manager.ui.*
 import org.css_apps_m3.password_manager.util.CsvReader
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 @SuppressLint("RestrictedApi")
 class MainActivity : FragmentActivity() {
@@ -36,10 +39,12 @@ class MainActivity : FragmentActivity() {
     }
 
     private var unlocked by mutableStateOf(false)
+    private lateinit var syncManager: SqlSyncManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        syncManager = SqlSyncManager(this)
 
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val isSetupDone = prefs.getBoolean("setup_done", false)
@@ -197,6 +202,12 @@ class MainActivity : FragmentActivity() {
                                     // Now oldEntry + updatedEntry
                                     onSave = { oldEntry, updated ->
                                         repo.updatePasswordWithOldKey(oldEntry.url, oldEntry.username, updated)
+                                        lifecycleScope.launch {
+                                            val cfg = SqlSyncManager.loadConfig(this@MainActivity)
+                                            if (cfg.autoSync) {
+                                                syncManager.sync(cfg, repo.loadPasswords())
+                                            }
+                                        }
 
                                         navController.navigate("detail/$domainArg") {
                                             popUpTo("detail/$domainArg") { inclusive = true }
@@ -206,6 +217,12 @@ class MainActivity : FragmentActivity() {
                                     },
                                     onDelete = { entryToDelete ->
                                         repo.deletePassword(entryToDelete)
+                                        lifecycleScope.launch {
+                                            val cfg = SqlSyncManager.loadConfig(this@MainActivity)
+                                            if (cfg.autoSync) {
+                                                syncManager.sync(cfg, repo.loadPasswords())
+                                            }
+                                        }
 
                                         val remaining = repo.loadPasswords().any { extractDomainStable(it.url) == domainArg }
                                         if (!remaining) {

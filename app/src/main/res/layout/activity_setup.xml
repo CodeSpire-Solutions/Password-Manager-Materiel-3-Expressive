@@ -7,23 +7,24 @@
 
     <EditText
         android:id="@+id/masterPasswordInput"
-        android:hint="Master-Passwort"
+        android:hint="Master password"
         android:inputType="textPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <Button
         android:id="@+id/importCsvButton"
-        android:text="CSV importieren"
+        android:text="Import CSV"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"/>
 
     <Button
         android:id="@+id/finishSetupButton"
-        android:text="Setup abschließen"
+        android:text="Finish setup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"/>
 
 </LinearLayout>
+
