@@ -18,7 +18,7 @@ enum class DbType(
         displayName  = "MySQL / MariaDB",
         defaultPort  = 3306,
         jdbcDriver   = "com.mysql.jdbc.Driver",
-        urlTemplate  = "jdbc:mysql://{host}:{port}/{database}?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=10000&socketTimeout=15000"
+        urlTemplate  = "jdbc:mysql://{host}:{port}/{database}?useSSL=true&sslMode=PREFERRED&allowPublicKeyRetrieval=true&connectTimeout=10000&socketTimeout=15000"
     ),
     SQLITE(
         displayName  = "SQLite (local .db file)",
