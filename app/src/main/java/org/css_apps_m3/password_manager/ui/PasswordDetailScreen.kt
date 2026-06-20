@@ -4,6 +4,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import android.view.Window
+import android.view.WindowManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import org.css_apps_m3.password_manager.R
 import org.css_apps_m3.password_manager.model.PasswordEntry
 
@@ -27,6 +30,7 @@ fun PasswordDetailScreen(
     onEdit: (PasswordEntry) -> Unit
 ) {
     val context = LocalContext.current
+    BlockScreenshotsOnThisScreen(context)
 
     Scaffold(
         topBar = {
@@ -80,6 +84,38 @@ fun PasswordDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun BlockScreenshotsOnThisScreen(context: Context) {
+    val window = remember(context) { context.findActivityWindow() }
+
+    DisposableEffect(window) {
+        val previousSecureState =
+            window?.attributes?.flags?.and(WindowManager.LayoutParams.FLAG_SECURE) != 0
+
+        window?.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
+
+        onDispose {
+            if (previousSecureState) {
+                window?.setFlags(
+                    WindowManager.LayoutParams.FLAG_SECURE,
+                    WindowManager.LayoutParams.FLAG_SECURE
+                )
+            } else {
+                window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+        }
+    }
+}
+
+private tailrec fun Context.findActivityWindow(): Window? = when (this) {
+    is FragmentActivity -> window
+    is android.content.ContextWrapper -> baseContext.findActivityWindow()
+    else -> null
 }
 
 

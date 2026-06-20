@@ -1,6 +1,9 @@
 package org.css_apps_m3.password_manager.ui
 
 import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
+import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,9 +18,11 @@ import androidx.fragment.app.FragmentActivity
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.css_apps_m3.password_manager.AppThemed
-import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
-import org.css_apps_m3.password_manager.ui.ui.theme.PasswordManagerTheme
+import java.security.KeyStore
 import java.util.concurrent.Executor
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 
 @Composable
 fun UnlockScreen(onUnlock: () -> Unit) {
@@ -53,7 +58,7 @@ private fun UnlockContent(
     if (biometricsEnabled) {
         LaunchedEffect(Unit) {
             if (context is FragmentActivity) {
-                triggerBiometricAuth(context) {
+                triggerBiometricAuth(context, onError = { error = it }) {
                     onUnlock()
                 }
             }
@@ -105,7 +110,7 @@ private fun UnlockContent(
         Spacer(Modifier.height(16.dp))
 
         if (biometricsEnabled) {
-            BiometricButton(context) {
+            BiometricButton(context, onError = { error = it }) {
                 onUnlock()
             }
         }
@@ -115,31 +120,126 @@ private fun UnlockContent(
             Text(it, color = MaterialTheme.colorScheme.error)
         }
     }
+}
+
+private const val BIOMETRIC_KEY_ALIAS = "password_manager_biometric_unlock_key"
+private const val BIOMETRIC_TRANSFORMATION =
+    "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_GCM}/${KeyProperties.ENCRYPTION_PADDING_NONE}"
+
+private fun getOrCreateBiometricSecretKey(): SecretKey {
+    val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+    val existingKey = keyStore.getKey(BIOMETRIC_KEY_ALIAS, null) as? SecretKey
+    if (existingKey != null) return existingKey
+
+    val keyGenerator = KeyGenerator.getInstance(
+        KeyProperties.KEY_ALGORITHM_AES,
+        "AndroidKeyStore"
+    )
+    val keySpec = KeyGenParameterSpec.Builder(
+        BIOMETRIC_KEY_ALIAS,
+        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+    )
+        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+        .setUserAuthenticationRequired(true)
+        .setInvalidatedByBiometricEnrollment(true)
+        .build()
+
+    keyGenerator.init(keySpec)
+    return keyGenerator.generateKey()
+}
+
+private fun buildBiometricCipher(): Cipher {
+    return Cipher.getInstance(BIOMETRIC_TRANSFORMATION).apply {
+        init(Cipher.ENCRYPT_MODE, getOrCreateBiometricSecretKey())
     }
+}
 
-@Composable
-fun BiometricButton(context: Context, onUnlock: () -> Unit) {
-    if (context is FragmentActivity) {
-        val executor: Executor = ContextCompat.getMainExecutor(context)
+private fun recreateBiometricKey() {
+    KeyStore.getInstance("AndroidKeyStore").apply {
+        load(null)
+        deleteEntry(BIOMETRIC_KEY_ALIAS)
+    }
+    getOrCreateBiometricSecretKey()
+}
 
-        val biometricPrompt = BiometricPrompt(
-            context,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    onUnlock()
+private fun createBiometricPrompt(
+    activity: FragmentActivity,
+    onError: (String) -> Unit,
+    onUnlock: () -> Unit
+): BiometricPrompt {
+    val executor: Executor = ContextCompat.getMainExecutor(activity)
+
+    return BiometricPrompt(
+        activity,
+        executor,
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
+                    errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
+                    errorCode != BiometricPrompt.ERROR_CANCELED
+                ) {
+                    onError(errString.toString())
                 }
             }
-        )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock with Biometric")
-            .setSubtitle("Use fingerprint or face recognition to unlock")
-            .setNegativeButtonText("Abort")
-            .build()
+            override fun onAuthenticationFailed() {
+                onError("Biometric authentication failed")
+            }
+
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                val authenticatedCipher = result.cryptoObject?.cipher
+                if (authenticatedCipher == null) {
+                    onError("Biometric authentication could not verify secure unlock")
+                    return
+                }
+
+                try {
+                    authenticatedCipher.doFinal(ByteArray(0))
+                    onUnlock()
+                } catch (_: Exception) {
+                    onError("Biometric authentication could not verify secure unlock")
+                }
+            }
+        }
+    )
+}
+
+private fun biometricPromptInfo(): BiometricPrompt.PromptInfo {
+    return BiometricPrompt.PromptInfo.Builder()
+        .setTitle("Unlock with Biometric")
+        .setSubtitle("Use fingerprint or face recognition to unlock")
+        .setNegativeButtonText("Abort")
+        .build()
+}
+
+private fun authenticateWithBiometricCrypto(
+    prompt: BiometricPrompt,
+    promptInfo: BiometricPrompt.PromptInfo,
+    onError: (String) -> Unit
+) {
+    try {
+        prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(buildBiometricCipher()))
+    } catch (_: KeyPermanentlyInvalidatedException) {
+        runCatching { recreateBiometricKey() }
+        onError("Biometric settings changed. Try biometric unlock again.")
+    } catch (_: Exception) {
+        onError("Biometric authentication is not available")
+    }
+}
+
+@Composable
+fun BiometricButton(context: Context, onError: (String) -> Unit, onUnlock: () -> Unit) {
+    if (context is FragmentActivity) {
+        val biometricPrompt = remember(context) {
+            createBiometricPrompt(context, onError, onUnlock)
+        }
+        val promptInfo = remember { biometricPromptInfo() }
 
         Button(
-            onClick = { biometricPrompt.authenticate(promptInfo) },
+            onClick = {
+                authenticateWithBiometricCrypto(biometricPrompt, promptInfo, onError)
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Unlock with Biometric",
@@ -153,24 +253,7 @@ fun BiometricButton(context: Context, onUnlock: () -> Unit) {
 }
 
 // Help function for auto start
-fun triggerBiometricAuth(context: FragmentActivity, onUnlock: () -> Unit) {
-    val executor: Executor = ContextCompat.getMainExecutor(context)
-
-    val biometricPrompt = BiometricPrompt(
-        context,
-        executor,
-        object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                onUnlock()
-            }
-        }
-    )
-
-    val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Unlock with Biometric")
-        .setSubtitle("Use fingerprint or face recognition to unlock")
-        .setNegativeButtonText("Abort")
-        .build()
-
-    biometricPrompt.authenticate(promptInfo)
+fun triggerBiometricAuth(context: FragmentActivity, onError: (String) -> Unit, onUnlock: () -> Unit) {
+    val biometricPrompt = createBiometricPrompt(context, onError, onUnlock)
+    authenticateWithBiometricCrypto(biometricPrompt, biometricPromptInfo(), onError)
 }
