@@ -1,0 +1,3 @@
+Changelog:
+-Added the long planned SQL Sync Feature -> Documentation mentioned in README.md
+-Added Autofill Feature for the app ( Github Issue #16 )

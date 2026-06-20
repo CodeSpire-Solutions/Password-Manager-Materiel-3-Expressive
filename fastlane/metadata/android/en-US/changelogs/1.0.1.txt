@@ -1,0 +1,4 @@
+Changelog:
+-Added Block Screenshots on DetailScreen (Requested by a Google Play User)
+-Enhanced security
+-General bug fixes
