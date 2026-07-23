@@ -142,7 +142,7 @@ private fun getOrCreateBiometricSecretKey(): SecretKey {
         .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
         .setUserAuthenticationRequired(true)
-        .setInvalidatedByBiometricEnrollment(true)
+        .setInvalidatedByBiometricEnrollment(false) // Fix: pass a boolean value as an argument to the `setInvalidatedByBiometricEnrollment()` method.
         .build()
 
     keyGenerator.init(keySpec)
