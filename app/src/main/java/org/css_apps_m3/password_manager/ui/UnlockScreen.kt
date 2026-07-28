@@ -120,26 +120,9 @@ if (error != null) {
     // Handle the error case
 } else {
     key = getOrCreateBiometricSecretKey(null);
+val keyStore = KeyStore.getInstance("AndroidKeyStore").apply {
+    load(FileInputStream("/etc/security/crypto_keystore"), null)
 }
-    }
-}
-
-private const val BIOMETRIC_KEY_ALIAS = "password_manager_biometric_unlock_key"
-private const val BIOMETRIC_TRANSFORMATION =
-    "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_GCM}/${KeyProperties.ENCRYPTION_PADDING_NONE}"
-
-private fun getOrCreateBiometricSecretKey(): SecretKey {
-    val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-    val existingKey = keyStore.getKey(BIOMETRIC_KEY_ALIAS, null) as? SecretKey
-    if (existingKey != null) return existingKey
-
-    val keyGenerator = KeyGenerator.getInstance(
-        KeyProperties.KEY_ALGORITHM_AES,
-        "AndroidKeyStore"
-    )
-    val keySpec = KeyGenParameterSpec.Builder(
-        BIOMETRIC_KEY_ALIAS,
-        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
     )
         .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
