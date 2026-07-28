@@ -115,10 +115,12 @@ private fun UnlockContent(
             }
         }
 
-        error?.let {
-            Spacer(Modifier.height(8.dp))
-            Text(it, color = MaterialTheme.colorScheme.error)
-        }
+String key = "";
+if (error != null) {
+    // Handle the error case
+} else {
+    key = getOrCreateBiometricSecretKey(null);
+}
     }
 }
 
