@@ -25,7 +25,7 @@ Passwords combines strong local encryption, clean Material 3 design, and optiona
 - Material 3 Expressive Theme & Haptical Feedback System
 
 ## Release Channels
-- Stable Releases: [v2.0.0](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/2.0.0)
+- Stable Releases: [v2.0.0 - Final Update: App will no longer receive support!](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/releases/tag/2.0.0) 
 
 ## Fixes and Security Issues
 If you have any suggestions or security issues, please open an Issue or a Pull Request.
