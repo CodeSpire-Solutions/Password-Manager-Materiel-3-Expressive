@@ -1,0 +1,5 @@
+Version 2.0.0
+
+* Added custom fields for every password entry, including encrypted cloud sync support.
+* Added a secure password generator in the app and for compatible Android Autofill registration forms.
+* Redesigned the app with a richer Material 3 Expressive interface and motion.

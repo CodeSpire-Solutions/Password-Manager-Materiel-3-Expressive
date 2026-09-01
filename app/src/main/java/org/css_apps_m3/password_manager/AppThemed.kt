@@ -9,8 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.update
 import org.css_apps_m3.password_manager.ui.theme.PasswordViewerTheme
 
 // A simple global object to hold preferences as reactive StateFlows
@@ -31,12 +29,36 @@ object AppPrefs {
     }
 
     fun saveDarkMode(context: Context, enabled: Boolean) {
-        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean("dark_mode", enabled)
-            .apply()
+        preferences(context).edit().putBoolean("dark_mode", enabled).apply()
         darkMode.value = enabled
     }
+
+    fun saveDynamicTheme(context: Context, enabled: Boolean) {
+        preferences(context).edit().putBoolean("dynamic_theme", enabled).apply()
+        dynamicTheme.value = enabled
+    }
+
+    fun saveCustomAccent(context: Context, color: Int) {
+        preferences(context).edit().putInt("custom_accent", color).apply()
+        customAccent.value = color
+    }
+
+    fun saveCornerRadius(context: Context, radius: Float) {
+        preferences(context).edit().putFloat("corner_radius", radius).apply()
+        cornerRadius.value = radius
+    }
+
+    fun updateCornerRadius(radius: Float) {
+        cornerRadius.value = radius
+    }
+
+    fun saveHaptics(context: Context, enabled: Boolean) {
+        preferences(context).edit().putBoolean("haptics", enabled).apply()
+        haptics.value = enabled
+    }
+
+    private fun preferences(context: Context) =
+        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 }
 
 @Composable

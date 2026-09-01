@@ -14,8 +14,8 @@ android {
         applicationId = "org.css_apps_m3.password_manager"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.0.0"
+        versionCode = 20
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

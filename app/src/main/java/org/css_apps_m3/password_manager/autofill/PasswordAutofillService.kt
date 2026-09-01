@@ -5,19 +5,26 @@ import android.net.Uri
 import android.os.Build
 import android.service.autofill.AutofillService
 import android.service.autofill.Dataset
+import android.service.autofill.Field
 import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.FillResponse
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveInfo
 import android.service.autofill.SaveRequest
+import android.service.autofill.Presentations
 import android.view.View
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
 import org.css_apps_m3.password_manager.R
 import org.css_apps_m3.password_manager.data.PasswordRepository
+import org.css_apps_m3.password_manager.data.SqlSyncManager
 import org.css_apps_m3.password_manager.model.PasswordEntry
+import org.css_apps_m3.password_manager.util.PasswordGenerator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class PasswordAutofillService : AutofillService() {
@@ -61,6 +68,9 @@ class PasswordAutofillService : AutofillService() {
         candidates.forEach { entry ->
             responseBuilder.addDataset(buildDataset(entry, parsed.usernameId, parsed.passwordId))
         }
+        if (parsed.isRegistration && parsed.passwordId != null) {
+            responseBuilder.addDataset(buildGeneratedPasswordDataset(parsed.passwordId))
+        }
         callback.onSuccess(responseBuilder.build())
     }
 
@@ -96,6 +106,12 @@ class PasswordAutofillService : AutofillService() {
             existing.add(newEntry)
         }
         repository.saveLocal(existing)
+        val syncConfig = SqlSyncManager.loadConfig(this)
+        if (syncConfig.autoSync) {
+            CoroutineScope(Dispatchers.IO).launch {
+                SqlSyncManager(this@PasswordAutofillService).sync(syncConfig, existing)
+            }
+        }
         callback.onSuccess()
     }
 
@@ -109,14 +125,65 @@ class PasswordAutofillService : AutofillService() {
             setTextViewText(android.R.id.text2, entry.username)
         }
 
-        val builder = Dataset.Builder(presentation)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            buildModernDataset(
+                presentation = presentation,
+                usernameId = usernameId,
+                username = entry.username,
+                passwordId = passwordId,
+                password = entry.password
+            )
+        } else {
+            buildLegacyDataset(presentation, usernameId, entry.username, passwordId, entry.password)
+        }
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private fun buildModernDataset(
+        presentation: RemoteViews,
+        usernameId: AutofillId?,
+        username: String,
+        passwordId: AutofillId?,
+        password: String
+    ): Dataset {
+        val presentations = Presentations.Builder()
+            .setMenuPresentation(presentation)
+            .build()
+        val builder = Dataset.Builder(presentations)
         if (usernameId != null) {
-            builder.setValue(usernameId, AutofillValue.forText(entry.username))
+            builder.setField(usernameId, Field.Builder().setValue(AutofillValue.forText(username)).build())
         }
         if (passwordId != null) {
-            builder.setValue(passwordId, AutofillValue.forText(entry.password))
+            builder.setField(passwordId, Field.Builder().setValue(AutofillValue.forText(password)).build())
         }
         return builder.build()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun buildLegacyDataset(
+        presentation: RemoteViews,
+        usernameId: AutofillId?,
+        username: String,
+        passwordId: AutofillId?,
+        password: String
+    ): Dataset {
+        val builder = Dataset.Builder(presentation)
+        usernameId?.let { builder.setValue(it, AutofillValue.forText(username)) }
+        passwordId?.let { builder.setValue(it, AutofillValue.forText(password)) }
+        return builder.build()
+    }
+
+    private fun buildGeneratedPasswordDataset(passwordId: AutofillId?): Dataset {
+        val generatedPassword = PasswordGenerator.generate()
+        val presentation = RemoteViews(packageName, android.R.layout.simple_list_item_2).apply {
+            setTextViewText(android.R.id.text1, "Generate strong password")
+            setTextViewText(android.R.id.text2, "A new 20-character password")
+        }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            buildModernDataset(presentation, null, "", passwordId, generatedPassword)
+        } else {
+            buildLegacyDataset(presentation, null, "", passwordId, generatedPassword)
+        }
     }
 
     private fun parseStructure(structure: AssistStructure): ParsedAutofillFields {
@@ -125,6 +192,7 @@ class PasswordAutofillService : AutofillService() {
         var usernameValue = ""
         var passwordValue = ""
         var domain = ""
+        var isRegistration = false
 
         for (windowIndex in 0 until structure.windowNodeCount) {
             val windowNode = structure.getWindowNodeAt(windowIndex)
@@ -146,6 +214,14 @@ class PasswordAutofillService : AutofillService() {
                     (inputType and android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD) != 0 ||
                     hint.contains("password") || idEntry.contains("password") || idEntry.contains("pass") ||
                     htmlType == "password" || autoComplete.contains("password")
+                val isNewPassword = autoComplete.contains("new-password") ||
+                    hint.contains("new password") || idEntry.contains("new_password") ||
+                    hint.contains("create password") || idEntry.contains("create_password") ||
+                    node.autofillHints?.any {
+                        it.equals("newPassword", ignoreCase = true) ||
+                            it.equals("new-password", ignoreCase = true)
+                    } == true
+                if (isNewPassword) isRegistration = true
                 val isUserInput = hint.contains("user") || hint.contains("email") || hint.contains("login") ||
                     idEntry.contains("name") ||
                     idEntry.contains("user") || idEntry.contains("email") || idEntry.contains("login")
@@ -181,7 +257,8 @@ class PasswordAutofillService : AutofillService() {
             passwordId = passwordId,
             usernameValue = usernameValue,
             passwordValue = passwordValue,
-            domain = normalizeDomain(domain)
+            domain = normalizeDomain(domain),
+            isRegistration = isRegistration
         )
     }
 
@@ -225,5 +302,6 @@ private data class ParsedAutofillFields(
     val passwordId: AutofillId?,
     val usernameValue: String,
     val passwordValue: String,
-    val domain: String
+    val domain: String,
+    val isRegistration: Boolean
 )

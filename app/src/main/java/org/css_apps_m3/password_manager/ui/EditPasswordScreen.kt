@@ -1,14 +1,19 @@
 package org.css_apps_m3.password_manager.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.css_apps_m3.password_manager.model.CustomField
 import org.css_apps_m3.password_manager.model.PasswordEntry
+import org.css_apps_m3.password_manager.util.PasswordGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,13 +56,15 @@ fun EditPasswordScreen(
             url = selectedEntry.url.ifBlank { "" },
             username = selectedEntry.username.ifBlank { "" },
             password = selectedEntry.password.ifBlank { "" },
-            note = selectedEntry.note ?: ""
+            note = selectedEntry.note ?: "",
+            customFields = selectedEntry.customFields
         ) ?: PasswordEntry(
             name = "",
             url = "",
             username = "",
             password = "",
-            note = ""
+            note = "",
+            customFields = emptyList()
         )
     }
 
@@ -65,6 +72,7 @@ fun EditPasswordScreen(
     var username by remember(safeEntry) { mutableStateOf(safeEntry.username) }
     var password by remember(safeEntry) { mutableStateOf(safeEntry.password) }
     var note by remember(safeEntry) { mutableStateOf(safeEntry.note ?: "") }
+    var customFields by remember(safeEntry) { mutableStateOf(safeEntry.customFields) }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var accountMenuExpanded by remember { mutableStateOf(false) }
@@ -117,10 +125,17 @@ fun EditPasswordScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(20.dp)
-                .fillMaxSize(),
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 40.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            ExpressiveHero(
+                eyebrow = "Edit entry",
+                title = domain,
+                supportingText = "Refresh credentials, generate a new password or add private details."
+            )
 
             // Account selector (only when multiple exist)
             if (usernames.size > 1) {
@@ -169,35 +184,37 @@ fun EditPasswordScreen(
                 )
             }
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                singleLine = true,
-                enabled = selectedEntry != null
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                singleLine = true,
-                enabled = selectedEntry != null
-            )
-
-            OutlinedTextField(
-                value = note,
-                onValueChange = { note = it },
-                label = { Text("Note (optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                minLines = 3,
-                enabled = selectedEntry != null
-            )
+            ExpressiveSection(title = "Credentials", icon = Icons.Default.Key) {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    singleLine = true,
+                    enabled = selectedEntry != null
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    singleLine = true,
+                    enabled = selectedEntry != null,
+                    trailingIcon = { TextButton(onClick = { password = PasswordGenerator.generate() }, enabled = selectedEntry != null) { Text("Generate") } }
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Note (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    minLines = 3,
+                    enabled = selectedEntry != null
+                )
+                CustomFieldsEditor(customFields = customFields, onCustomFieldsChange = { customFields = it }, enabled = selectedEntry != null)
+            }
 
             Spacer(Modifier.weight(1f))
 
@@ -206,7 +223,8 @@ fun EditPasswordScreen(
                     val updatedEntry = safeEntry.copy(
                         username = username.trim(),
                         password = password,
-                        note = note.trim().ifBlank { null }
+                        note = note.trim().ifBlank { null },
+                        customFields = customFields.cleaned()
                     )
 
                     // IMPORTANT: pass oldEntry (selectedEntry) + updatedEntry
@@ -215,7 +233,7 @@ fun EditPasswordScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
+                shape = MaterialTheme.shapes.medium,
                 enabled = selectedEntry != null
             ) {
                 Text("Save Changes")
@@ -223,3 +241,7 @@ fun EditPasswordScreen(
         }
     }
 }
+
+private fun List<CustomField>.cleaned(): List<CustomField> =
+    map { it.copy(label = it.label.trim(), value = it.value.trim()) }
+        .filter { it.label.isNotBlank() }

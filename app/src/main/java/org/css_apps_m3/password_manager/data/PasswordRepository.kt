@@ -65,7 +65,8 @@ class PasswordRepository {
             input.readBytes().toString(Charsets.UTF_8)
         }
         val type = object : TypeToken<List<PasswordEntry>>() {}.type
-        return gson.fromJson(json, type) ?: emptyList()
+        return (gson.fromJson<List<PasswordEntry>>(json, type) ?: emptyList())
+            .map { entry -> entry.copy(customFields = entry.customFields.orEmpty()) }
     }
 
     /**
@@ -104,7 +105,7 @@ class PasswordRepository {
 
         context.contentResolver.openOutputStream(uri)?.use { out ->
             OutputStreamWriter(out, Charsets.UTF_8).use { writer ->
-                writer.appendLine("name,url,username,password,note")
+                writer.appendLine("name,url,username,password,note,custom_fields_json")
 
                 passwords.forEach { p ->
                     fun esc(value: String?): String =
@@ -120,7 +121,8 @@ class PasswordRepository {
                             esc(p.url),
                             esc(p.username),
                             esc(p.password),
-                            esc(p.note)
+                            esc(p.note),
+                            esc(gson.toJson(p.customFields))
                         ).joinToString(",")
                     )
                 }

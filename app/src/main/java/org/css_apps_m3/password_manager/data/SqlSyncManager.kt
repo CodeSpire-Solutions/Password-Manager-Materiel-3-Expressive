@@ -4,6 +4,9 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import org.css_apps_m3.password_manager.model.CustomField
 import org.css_apps_m3.password_manager.model.PasswordEntry
 import java.sql.Connection
 import java.sql.DriverManager
@@ -32,6 +35,7 @@ import kotlinx.coroutines.withContext
  * - Use TLS/SSL on your database server. For MySQL, add `useSSL=true` to the
  */
 class SqlSyncManager(private val context: Context) {
+    private val gson = Gson()
 
     // -------------------------------------------------------------------------
     // Public API
@@ -163,8 +167,8 @@ class SqlSyncManager(private val context: Context) {
             // 3. Bulk insert
             val sql = when (config.type) {
                 DbType.MYSQL -> """
-                    INSERT INTO passwords (name, url, username, password, note)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO passwords (name, url, username, password, note, custom_fields)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """.trimIndent()
 
                 DbType.SQLITE -> throw IllegalStateException("Use syncSqlite()")
@@ -178,6 +182,7 @@ class SqlSyncManager(private val context: Context) {
                     stmt.setString(3, entry.username)
                     stmt.setString(4, entry.password)
                     stmt.setString(5, entry.note ?: "")
+                    stmt.setString(6, gson.toJson(entry.customFields))
                     stmt.addBatch()
                     count++
                 }
@@ -212,6 +217,7 @@ class SqlSyncManager(private val context: Context) {
                     username   VARCHAR(255)  NOT NULL DEFAULT '',
                     password   TEXT          NOT NULL,
                     note       TEXT,
+                    custom_fields TEXT,
                     synced_at  DATETIME      DEFAULT CURRENT_TIMESTAMP
                                             ON UPDATE CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -220,12 +226,21 @@ class SqlSyncManager(private val context: Context) {
             DbType.SQLITE -> throw IllegalStateException("Use syncSqlite()")
         }
         conn.createStatement().use { it.execute(ddl) }
+        try {
+            conn.createStatement().use {
+                it.executeUpdate("ALTER TABLE passwords ADD COLUMN custom_fields TEXT NULL")
+            }
+        } catch (error: java.sql.SQLException) {
+            val duplicateColumn = error.errorCode == 1060 ||
+                error.message.orEmpty().contains("duplicate column", ignoreCase = true)
+            if (!duplicateColumn) throw error
+        }
     }
 
     private fun readFromRemote(config: SqlSyncConfig): List<PasswordEntry> {
         openConnection(config).use { conn ->
             createTableIfNeeded(conn, config.type)
-            val sql = "SELECT name, url, username, password, note FROM passwords"
+            val sql = "SELECT name, url, username, password, note, custom_fields FROM passwords"
             conn.createStatement().use { stmt ->
                 stmt.executeQuery(sql).use { rs ->
                     val result = mutableListOf<PasswordEntry>()
@@ -236,7 +251,11 @@ class SqlSyncManager(private val context: Context) {
                                 url = rs.getString("url") ?: "",
                                 username = rs.getString("username") ?: "",
                                 password = rs.getString("password") ?: "",
-                                note = rs.getString("note")
+                                note = rs.getString("note"),
+                                customFields = gson.fromJson(
+                                    rs.getString("custom_fields").orEmpty(),
+                                    customFieldsType
+                                ) ?: emptyList()
                             )
                         )
                     }
@@ -261,18 +280,27 @@ class SqlSyncManager(private val context: Context) {
                     username  TEXT NOT NULL DEFAULT '',
                     password  TEXT NOT NULL,
                     note      TEXT,
+                    custom_fields TEXT,
                     synced_at TEXT DEFAULT (datetime('now'))
                 )
                 """.trimIndent()
             )
+            ensureLocalCustomFieldsColumn(db)
 
             db.beginTransaction()
             try {
                 db.execSQL("DELETE FROM passwords")
                 passwords.forEach { entry ->
                     db.execSQL(
-                        "INSERT INTO passwords (name, url, username, password, note) VALUES (?,?,?,?,?)",
-                        arrayOf(entry.name, entry.url, entry.username, entry.password, entry.note ?: "")
+                        "INSERT INTO passwords (name, url, username, password, note, custom_fields) VALUES (?,?,?,?,?,?)",
+                        arrayOf(
+                            entry.name,
+                            entry.url,
+                            entry.username,
+                            entry.password,
+                            entry.note ?: "",
+                            gson.toJson(entry.customFields)
+                        )
                     )
                 }
                 db.setTransactionSuccessful()
@@ -295,13 +323,15 @@ class SqlSyncManager(private val context: Context) {
                     username  TEXT NOT NULL DEFAULT '',
                     password  TEXT NOT NULL,
                     note      TEXT,
+                    custom_fields TEXT,
                     synced_at TEXT DEFAULT (datetime('now'))
                 )
                 """.trimIndent()
             )
+            ensureLocalCustomFieldsColumn(db)
             val result = mutableListOf<PasswordEntry>()
             db.rawQuery(
-                "SELECT name, url, username, password, note FROM passwords",
+                "SELECT name, url, username, password, note, custom_fields FROM passwords",
                 null
             ).use { cursor ->
                 val nameIndex = cursor.getColumnIndexOrThrow("name")
@@ -309,6 +339,7 @@ class SqlSyncManager(private val context: Context) {
                 val usernameIndex = cursor.getColumnIndexOrThrow("username")
                 val passwordIndex = cursor.getColumnIndexOrThrow("password")
                 val noteIndex = cursor.getColumnIndexOrThrow("note")
+                val customFieldsIndex = cursor.getColumnIndexOrThrow("custom_fields")
                 while (cursor.moveToNext()) {
                     result.add(
                         PasswordEntry(
@@ -316,7 +347,11 @@ class SqlSyncManager(private val context: Context) {
                             url = cursor.getString(urlIndex) ?: "",
                             username = cursor.getString(usernameIndex) ?: "",
                             password = cursor.getString(passwordIndex) ?: "",
-                            note = cursor.getString(noteIndex)
+                            note = cursor.getString(noteIndex),
+                            customFields = gson.fromJson(
+                                cursor.getString(customFieldsIndex).orEmpty(),
+                                customFieldsType
+                            ) ?: emptyList()
                         )
                     )
                 }
@@ -329,6 +364,19 @@ class SqlSyncManager(private val context: Context) {
         val dbFile = java.io.File(context.filesDir, "passwords_sync.db")
         return SQLiteDatabase.openOrCreateDatabase(dbFile, null)
     }
+
+    private fun ensureLocalCustomFieldsColumn(db: SQLiteDatabase) {
+        val hasCustomFields = db.rawQuery("PRAGMA table_info(passwords)", null).use { cursor ->
+            val nameIndex = cursor.getColumnIndexOrThrow("name")
+            generateSequence { if (cursor.moveToNext()) cursor.getString(nameIndex) else null }
+                .any { it == "custom_fields" }
+        }
+        if (!hasCustomFields) {
+            db.execSQL("ALTER TABLE passwords ADD COLUMN custom_fields TEXT")
+        }
+    }
+
+    private val customFieldsType = object : TypeToken<List<CustomField>>() {}.type
 
     private fun loadMasterPassword(): String? {
         val masterKey = MasterKey.Builder(context)
@@ -423,7 +471,13 @@ private fun PasswordEntry.encryptForSync(session: SyncCrypto.Session): PasswordE
         url = SyncCrypto.encrypt(url, session),
         username = SyncCrypto.encrypt(username, session),
         password = SyncCrypto.encrypt(password, session),
-        note = note?.let { SyncCrypto.encrypt(it, session) }
+        note = note?.let { SyncCrypto.encrypt(it, session) },
+        customFields = customFields.map { field ->
+            field.copy(
+                label = SyncCrypto.encrypt(field.label, session),
+                value = SyncCrypto.encrypt(field.value, session)
+            )
+        }
     )
 
 private fun PasswordEntry.decryptFromSync(
@@ -435,7 +489,13 @@ private fun PasswordEntry.decryptFromSync(
         url = decryptField(url, candidateKeys, sessionsByKey),
         username = decryptField(username, candidateKeys, sessionsByKey),
         password = decryptField(password, candidateKeys, sessionsByKey),
-        note = note?.let { decryptField(it, candidateKeys, sessionsByKey) }
+        note = note?.let { decryptField(it, candidateKeys, sessionsByKey) },
+        customFields = customFields.map { field ->
+            field.copy(
+                label = decryptField(field.label, candidateKeys, sessionsByKey),
+                value = decryptField(field.value, candidateKeys, sessionsByKey)
+            )
+        }
     )
 
 private fun decryptField(

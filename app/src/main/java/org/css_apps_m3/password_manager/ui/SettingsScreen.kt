@@ -208,10 +208,17 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 40.dp)
         ) {
+            item {
+                ExpressiveHero(
+                    eyebrow = "Control center",
+                    title = "Make the vault yours.",
+                    supportingText = "Appearance, Autofill and encrypted sync stay in one place."
+                )
+            }
 
             // â”€â”€â”€ Appearance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             item {
@@ -232,9 +239,9 @@ fun SettingsScreen(
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Dynamic Material You")
-                        Switch(checked = dynamicTheme, onCheckedChange = {
-                            dynamicTheme = it
-                            prefs.edit().putBoolean("dynamic_theme", dynamicTheme).apply()
+                    Switch(checked = dynamicTheme, onCheckedChange = {
+                        dynamicTheme = it
+                        AppPrefs.saveDynamicTheme(context, it)
                         })
                     }
                 }
@@ -245,7 +252,7 @@ fun SettingsScreen(
                     Text("Haptic Feedback")
                     Switch(checked = haptics, onCheckedChange = {
                         haptics = it
-                        prefs.edit().putBoolean("haptics", haptics).apply()
+                        AppPrefs.saveHaptics(context, it)
                     })
                 }
             }
@@ -255,7 +262,7 @@ fun SettingsScreen(
                 Spacer(Modifier.height(8.dp))
                 AccentColorPicker(selectedColor = customAccent, onColorSelected = {
                     customAccent = it
-                    prefs.edit().putInt("custom_accent", customAccent).apply()
+                    AppPrefs.saveCustomAccent(context, it)
                 })
             }
 
@@ -265,11 +272,12 @@ fun SettingsScreen(
                     value = cornerRadius,
                     onValueChange = {
                         val old = cornerRadius.toInt(); cornerRadius = it
+                        AppPrefs.updateCornerRadius(it)
                         if (haptics && old != it.toInt())
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     },
                     valueRange = 4f..32f,
-                    onValueChangeFinished = { prefs.edit().putFloat("corner_radius", cornerRadius).apply() }
+                    onValueChangeFinished = { AppPrefs.saveCornerRadius(context, cornerRadius) }
                 )
             }
 
