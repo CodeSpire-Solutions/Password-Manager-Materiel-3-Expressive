@@ -1,6 +1,6 @@
 ![App Icon](https://github.com/CodeSpire-Solutions/Password-Manager-Materiel-3-Expressive/blob/main/fastlane/metadata/android/en-US/images/icon.png)
 
-# Passwords | Materal 3 Password Manager
+# Passwords | Materal 3 Password Manager [No longer being developed]
 ## Description
 Passwords combines strong local encryption, clean Material 3 design, and optional SQL cloud sync in a focused Android experience. With Autofill, CSV portability, and multi-device sync, your credentials stay secure, organized, and available when you need them.
 
